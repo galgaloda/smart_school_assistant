@@ -180,24 +180,17 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-                return GridView.count(
-                  crossAxisCount: crossAxisCount,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.5,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  children: [
-                    _buildStatCard('Classes', _totalClasses.toString(), Icons.class_, Colors.blue),
-                    _buildStatCard('Teachers', _totalTeachers.toString(), Icons.person, Colors.green),
-                    _buildStatCard('Students', _totalStudents.toString(), Icons.people, Colors.orange),
-                    _buildStatCard('Subjects', _totalSubjects.toString(), Icons.book, Colors.purple),
-                  ],
-                );
-              },
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 1.5,
+              children: [
+                _buildStatCard('Classes', _totalClasses.toString(), Icons.class_, Colors.blue),
+                _buildStatCard('Teachers', _totalTeachers.toString(), Icons.person, Colors.green),
+                _buildStatCard('Students', _totalStudents.toString(), Icons.people, Colors.orange),
+                _buildStatCard('Subjects', _totalSubjects.toString(), Icons.book, Colors.purple),
+              ],
             ),
           ],
         ),
@@ -252,60 +245,53 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: constraints.maxWidth > 600 ? 1.3 : 1.2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              children: [
-                _buildManagementCard(
-                  'Classes',
-                  'Manage class sections and details',
-                  Icons.class_,
-                  Colors.blue,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ClassSelectionScreen()),
-                  ),
-                ),
-                _buildManagementCard(
-                  'Teachers',
-                  'Manage teacher profiles and assignments',
-                  Icons.person,
-                  Colors.green,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ManageTeachersScreen()),
-                  ),
-                ),
-                _buildManagementCard(
-                  'Students',
-                  'Manage student records and progress',
-                  Icons.people,
-                  Colors.orange,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const StudentManagementScreen()),
-                  ),
-                ),
-                _buildManagementCard(
-                  'Subjects',
-                  'Manage subjects and curriculum',
-                  Icons.book,
-                  Colors.purple,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ManageSubjectsScreen()),
-                  ),
-                ),
-              ],
-            );
-          },
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.2,
+          children: [
+            _buildManagementCard(
+              'Classes',
+              'Manage class sections and details',
+              Icons.class_,
+              Colors.blue,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ClassSelectionScreen()),
+              ),
+            ),
+            _buildManagementCard(
+              'Teachers',
+              'Manage teacher profiles and assignments',
+              Icons.person,
+              Colors.green,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManageTeachersScreen()),
+              ),
+            ),
+            _buildManagementCard(
+              'Students',
+              'Manage student records and progress',
+              Icons.people,
+              Colors.orange,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StudentManagementScreen()),
+              ),
+            ),
+            _buildManagementCard(
+              'Subjects',
+              'Manage subjects and curriculum',
+              Icons.book,
+              Colors.purple,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManageSubjectsScreen()),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -369,24 +355,18 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmallScreen = constraints.maxWidth < 400;
-                return Wrap(
-                  spacing: isSmallScreen ? 4 : 8,
-                  runSpacing: isSmallScreen ? 4 : 8,
-                  alignment: WrapAlignment.start,
-                  children: [
-                    _buildQuickActionChip('Register Student', Icons.person_add_alt, Colors.orange, _registerNewStudent, isSmallScreen),
-                    _buildQuickActionChip('Assign to Class', Icons.assignment_ind, Colors.teal, _assignStudentsToClass, isSmallScreen),
-                    _buildQuickActionChip('Add Class', Icons.add, Colors.blue, _addNewClass, isSmallScreen),
-                    _buildQuickActionChip('Add Teacher', Icons.person_add, Colors.green, _addNewTeacher, isSmallScreen),
-                    _buildQuickActionChip('Add Subject', Icons.library_add, Colors.purple, _addNewSubject, isSmallScreen),
-                    _buildQuickActionChip('Generate Report', Icons.assessment, Colors.teal, _generateQuickReport, isSmallScreen),
-                    _buildQuickActionChip('Backup Data', Icons.backup, Colors.red, _backupData, isSmallScreen),
-                  ],
-                );
-              },
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildQuickActionChip('Register Student', Icons.person_add_alt, Colors.orange, _registerNewStudent),
+                _buildQuickActionChip('Assign to Class', Icons.assignment_ind, Colors.teal, _assignStudentsToClass),
+                _buildQuickActionChip('Add Class', Icons.add, Colors.blue, _addNewClass),
+                _buildQuickActionChip('Add Teacher', Icons.person_add, Colors.green, _addNewTeacher),
+                _buildQuickActionChip('Add Subject', Icons.library_add, Colors.purple, _addNewSubject),
+                _buildQuickActionChip('Generate Report', Icons.assessment, Colors.teal, _generateQuickReport),
+                _buildQuickActionChip('Backup Data', Icons.backup, Colors.red, _backupData),
+              ],
             ),
           ],
         ),
@@ -394,20 +374,13 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
     );
   }
 
-  Widget _buildQuickActionChip(String label, IconData icon, Color color, VoidCallback onTap, [bool isSmallScreen = false]) {
+  Widget _buildQuickActionChip(String label, IconData icon, Color color, VoidCallback onTap) {
     return ActionChip(
-      avatar: Icon(icon, color: color, size: isSmallScreen ? 16 : 18),
-      label: Text(
-        label,
-        style: TextStyle(fontSize: isSmallScreen ? 11 : 12),
-      ),
+      avatar: Icon(icon, color: color, size: 18),
+      label: Text(label),
       onPressed: onTap,
       backgroundColor: color.withOpacity(0.1),
-      labelStyle: TextStyle(color: color, fontSize: isSmallScreen ? 11 : 12),
-      padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 6 : 8,
-        vertical: isSmallScreen ? 4 : 6,
-      ),
+      labelStyle: TextStyle(color: color, fontSize: 12),
     );
   }
 
