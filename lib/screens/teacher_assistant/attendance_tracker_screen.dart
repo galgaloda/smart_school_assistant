@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:smart_school_assistant/l10n/app_localizations.dart';
 import 'package:smart_school_assistant/models.dart';
 
 class AttendanceTrackerScreen extends StatefulWidget {
@@ -17,14 +18,16 @@ class AttendanceTrackerScreen extends StatefulWidget {
   });
 
   @override
-  State<AttendanceTrackerScreen> createState() => _AttendanceTrackerScreenState();
+  State<AttendanceTrackerScreen> createState() =>
+      _AttendanceTrackerScreenState();
 }
 
 class _AttendanceTrackerScreenState extends State<AttendanceTrackerScreen> {
   late DateTime _selectedDate;
   // Map to hold the attendance status for each student for the selected day
   late Map<String, String> _attendanceStatus;
-  final Box<AttendanceRecord> _attendanceBox = Hive.box<AttendanceRecord>('attendance_records');
+  final Box<AttendanceRecord> _attendanceBox =
+      Hive.box<AttendanceRecord>('attendance_records');
 
   @override
   void initState() {
@@ -87,8 +90,8 @@ class _AttendanceTrackerScreenState extends State<AttendanceTrackerScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Attendance saved successfully!'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.attendanceSaved),
         backgroundColor: Colors.green,
       ),
     );
@@ -114,12 +117,12 @@ class _AttendanceTrackerScreenState extends State<AttendanceTrackerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Take Attendance'),
+        title: Text(AppLocalizations.of(context)!.takeAttendanceTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _saveAttendance,
-            tooltip: 'Save Attendance',
+            tooltip: AppLocalizations.of(context)!.saveAttendance,
           ),
         ],
       ),
@@ -138,7 +141,7 @@ class _AttendanceTrackerScreenState extends State<AttendanceTrackerScreen> {
                 IconButton(
                   icon: const Icon(Icons.calendar_today),
                   onPressed: () => _selectDate(context),
-                  tooltip: 'Select Date',
+                  tooltip: AppLocalizations.of(context)!.selectDate,
                 ),
               ],
             ),
@@ -154,7 +157,9 @@ class _AttendanceTrackerScreenState extends State<AttendanceTrackerScreen> {
 
                 return ListTile(
                   leading: CircleAvatar(
-                    child: Text(student.fullName.isNotEmpty ? student.fullName[0] : '?'),
+                    child: Text(student.fullName.isNotEmpty
+                        ? student.fullName[0]
+                        : '?'),
                   ),
                   title: Text(student.fullName),
                   trailing: Row(
@@ -163,21 +168,24 @@ class _AttendanceTrackerScreenState extends State<AttendanceTrackerScreen> {
                       Radio<String>(
                         value: 'Present',
                         groupValue: status,
-                        onChanged: (value) => _updateAttendance(student.id, value!),
+                        onChanged: (value) =>
+                            _updateAttendance(student.id, value!),
                       ),
-                      const Text('P'),
+                      Text(AppLocalizations.of(context)!.present),
                       Radio<String>(
                         value: 'Absent',
                         groupValue: status,
-                        onChanged: (value) => _updateAttendance(student.id, value!),
+                        onChanged: (value) =>
+                            _updateAttendance(student.id, value!),
                       ),
-                      const Text('A'),
+                      Text(AppLocalizations.of(context)!.absent),
                       Radio<String>(
                         value: 'Late',
                         groupValue: status,
-                        onChanged: (value) => _updateAttendance(student.id, value!),
+                        onChanged: (value) =>
+                            _updateAttendance(student.id, value!),
                       ),
-                      const Text('L'),
+                      Text(AppLocalizations.of(context)!.late),
                     ],
                   ),
                 );

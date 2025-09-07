@@ -111,3 +111,202 @@ class TimeTableEntry extends HiveObject {
 
   TimeTableEntry({required this.dayOfWeek, required this.period, required this.subjectId, required this.classSectionId});
 }
+// PASTE THE NEW CODE HERE
+@HiveType(typeId: 7)
+class Period extends HiveObject {
+  @HiveField(0)
+  String id;
+
+  @HiveField(1)
+  String name; // e.g., "Period 1", "Break"
+
+  @HiveField(2)
+  String time; // e.g., "8:00 - 8:40"
+
+  @HiveField(3)
+  bool isBreak;
+
+  Period({required this.id, required this.name, required this.time, this.isBreak = false});
+}
+
+@HiveType(typeId: 8)
+class InventoryItem extends HiveObject {
+ @HiveField(0)
+ String id;
+
+ @HiveField(1)
+ String name; // e.g., "Book", "Table", "Computer"
+
+ @HiveField(2)
+ int quantity;
+
+ @HiveField(3)
+ String type; // e.g., "Educational", "Furniture", "Electronics"
+
+ @HiveField(4)
+ String condition; // "Worked" or "Not Worked"
+
+ @HiveField(5)
+ String description;
+
+ @HiveField(6)
+ DateTime dateAdded;
+
+ InventoryItem({
+   required this.id,
+   required this.name,
+   required this.quantity,
+   required this.type,
+   required this.condition,
+   required this.description,
+   required this.dateAdded,
+ });
+}
+
+@HiveType(typeId: 9)
+class DataRecord extends HiveObject {
+ @HiveField(0)
+ String id;
+
+ @HiveField(1)
+ String title;
+
+ @HiveField(2)
+ String category; // e.g., "Policies", "Student Records", "Teacher Records", "Administrative"
+
+ @HiveField(3)
+ String content;
+
+ @HiveField(4)
+ String? attachmentPath; // Path to attached file/document
+
+ @HiveField(5)
+ String priority; // "Low", "Medium", "High", "Critical"
+
+ @HiveField(6)
+ String status; // "Active", "Archived", "Draft"
+
+ @HiveField(7)
+ DateTime dateCreated;
+
+ @HiveField(8)
+ DateTime? lastModified;
+
+ @HiveField(9)
+ String createdBy; // User who created the record
+
+ DataRecord({
+   required this.id,
+   required this.title,
+   required this.category,
+   required this.content,
+   this.attachmentPath,
+   required this.priority,
+   required this.status,
+   required this.dateCreated,
+   this.lastModified,
+   required this.createdBy,
+ });
+}
+
+@HiveType(typeId: 10)
+class Assessment extends HiveObject {
+ @HiveField(0)
+ String id;
+
+ @HiveField(1)
+ String name; // e.g., "Quiz", "Mid-term", "Final Exam", "Project"
+
+ @HiveField(2)
+ String subjectId; // Links to Subject
+
+ @HiveField(3)
+ String classSectionId; // Links to ClassSection
+
+ @HiveField(4)
+ String semesterId; // Links to Semester
+
+ @HiveField(5)
+ double weight; // Weight in percentage (e.g., 0.2 for 20%)
+
+ @HiveField(6)
+ double maxMarks; // Maximum marks for this assessment
+
+ @HiveField(7)
+ DateTime dueDate;
+
+ @HiveField(8)
+ String description;
+
+ Assessment({
+   required this.id,
+   required this.name,
+   required this.subjectId,
+   required this.classSectionId,
+   required this.semesterId,
+   required this.weight,
+   required this.maxMarks,
+   required this.dueDate,
+   required this.description,
+ });
+}
+
+@HiveType(typeId: 11)
+class Semester extends HiveObject {
+ @HiveField(0)
+ String id;
+
+ @HiveField(1)
+ String name; // e.g., "Semester 1", "Semester 2"
+
+ @HiveField(2)
+ String academicYear; // e.g., "2023-2024"
+
+ @HiveField(3)
+ DateTime startDate;
+
+ @HiveField(4)
+ DateTime endDate;
+
+ @HiveField(5)
+ bool isActive; // Whether this semester is currently active
+
+ Semester({
+   required this.id,
+   required this.name,
+   required this.academicYear,
+   required this.startDate,
+   required this.endDate,
+   required this.isActive,
+ });
+}
+
+@HiveType(typeId: 12)
+class AssessmentScore extends HiveObject {
+ @HiveField(0)
+ String id;
+
+ @HiveField(1)
+ String studentId; // Links to Student
+
+ @HiveField(2)
+ String assessmentId; // Links to Assessment
+
+ @HiveField(3)
+ double marksObtained; // Marks obtained by student
+
+ @HiveField(4)
+ DateTime dateRecorded;
+
+ @HiveField(5)
+ String recordedBy; // Teacher who recorded the score
+
+ AssessmentScore({
+   required this.id,
+   required this.studentId,
+   required this.assessmentId,
+   required this.marksObtained,
+   required this.dateRecorded,
+   required this.recordedBy,
+ });
+}

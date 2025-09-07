@@ -297,3 +297,315 @@ class TimeTableEntryAdapter extends TypeAdapter<TimeTableEntry> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class PeriodAdapter extends TypeAdapter<Period> {
+  @override
+  final int typeId = 7;
+
+  @override
+  Period read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Period(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      time: fields[2] as String,
+      isBreak: fields[3] as bool,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Period obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.time)
+      ..writeByte(3)
+      ..write(obj.isBreak);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PeriodAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class InventoryItemAdapter extends TypeAdapter<InventoryItem> {
+  @override
+  final int typeId = 8;
+
+  @override
+  InventoryItem read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return InventoryItem(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      quantity: fields[2] as int,
+      type: fields[3] as String,
+      condition: fields[4] as String,
+      description: fields[5] as String,
+      dateAdded: fields[6] as DateTime,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, InventoryItem obj) {
+    writer
+      ..writeByte(7)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.quantity)
+      ..writeByte(3)
+      ..write(obj.type)
+      ..writeByte(4)
+      ..write(obj.condition)
+      ..writeByte(5)
+      ..write(obj.description)
+      ..writeByte(6)
+      ..write(obj.dateAdded);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InventoryItemAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class DataRecordAdapter extends TypeAdapter<DataRecord> {
+  @override
+  final int typeId = 9;
+
+  @override
+  DataRecord read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return DataRecord(
+      id: fields[0] as String,
+      title: fields[1] as String,
+      category: fields[2] as String,
+      content: fields[3] as String,
+      attachmentPath: fields[4] as String?,
+      priority: fields[5] as String,
+      status: fields[6] as String,
+      dateCreated: fields[7] as DateTime,
+      lastModified: fields[8] as DateTime?,
+      createdBy: fields[9] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, DataRecord obj) {
+    writer
+      ..writeByte(10)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.title)
+      ..writeByte(2)
+      ..write(obj.category)
+      ..writeByte(3)
+      ..write(obj.content)
+      ..writeByte(4)
+      ..write(obj.attachmentPath)
+      ..writeByte(5)
+      ..write(obj.priority)
+      ..writeByte(6)
+      ..write(obj.status)
+      ..writeByte(7)
+      ..write(obj.dateCreated)
+      ..writeByte(8)
+      ..write(obj.lastModified)
+      ..writeByte(9)
+      ..write(obj.createdBy);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DataRecordAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class AssessmentAdapter extends TypeAdapter<Assessment> {
+  @override
+  final int typeId = 10;
+
+  @override
+  Assessment read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Assessment(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      subjectId: fields[2] as String,
+      classSectionId: fields[3] as String,
+      semesterId: fields[4] as String,
+      weight: fields[5] as double,
+      maxMarks: fields[6] as double,
+      dueDate: fields[7] as DateTime,
+      description: fields[8] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Assessment obj) {
+    writer
+      ..writeByte(9)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.subjectId)
+      ..writeByte(3)
+      ..write(obj.classSectionId)
+      ..writeByte(4)
+      ..write(obj.semesterId)
+      ..writeByte(5)
+      ..write(obj.weight)
+      ..writeByte(6)
+      ..write(obj.maxMarks)
+      ..writeByte(7)
+      ..write(obj.dueDate)
+      ..writeByte(8)
+      ..write(obj.description);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AssessmentAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class SemesterAdapter extends TypeAdapter<Semester> {
+  @override
+  final int typeId = 11;
+
+  @override
+  Semester read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Semester(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      academicYear: fields[2] as String,
+      startDate: fields[3] as DateTime,
+      endDate: fields[4] as DateTime,
+      isActive: fields[5] as bool,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Semester obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.academicYear)
+      ..writeByte(3)
+      ..write(obj.startDate)
+      ..writeByte(4)
+      ..write(obj.endDate)
+      ..writeByte(5)
+      ..write(obj.isActive);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SemesterAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class AssessmentScoreAdapter extends TypeAdapter<AssessmentScore> {
+  @override
+  final int typeId = 12;
+
+  @override
+  AssessmentScore read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return AssessmentScore(
+      id: fields[0] as String,
+      studentId: fields[1] as String,
+      assessmentId: fields[2] as String,
+      marksObtained: fields[3] as double,
+      dateRecorded: fields[4] as DateTime,
+      recordedBy: fields[5] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, AssessmentScore obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.studentId)
+      ..writeByte(2)
+      ..write(obj.assessmentId)
+      ..writeByte(3)
+      ..write(obj.marksObtained)
+      ..writeByte(4)
+      ..write(obj.dateRecorded)
+      ..writeByte(5)
+      ..write(obj.recordedBy);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AssessmentScoreAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

@@ -1,11 +1,9 @@
-// =============================================================
-// FILE: lib/screens/teacher_assistant/class_selection_screen.dart (FIXED & COMPLETE)
-// =============================================================
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:smart_school_assistant/l10n/app_localizations.dart';
+import 'package:smart_school_assistant/main.dart';
 import 'package:smart_school_assistant/models.dart';
 import 'student_roster_screen.dart';
-import 'manage_subjects_screen.dart';
 
 class ClassSelectionScreen extends StatelessWidget {
   const ClassSelectionScreen({super.key});
@@ -18,18 +16,18 @@ class ClassSelectionScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add New Class Section'),
+          title: Text(AppLocalizations.of(context)!.addNewClassSection),
           content: Form(
             key: formKey,
             child: TextFormField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Class Name (e.g., Grade 7A)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.className,
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a class name.';
+                  return AppLocalizations.of(context)!.pleaseEnterClassName;
                 }
                 return null;
               },
@@ -37,13 +35,13 @@ class ClassSelectionScreen extends StatelessWidget {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
-              child: const Text('Save'),
+              child: Text(AppLocalizations.of(context)!.save),
               onPressed: () {
                 if (formKey.currentState!.validate()) {
                   final classBox = Hive.box<ClassSection>('class_sections');
@@ -66,17 +64,31 @@ class ClassSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select a Class'),
+        title: Text(AppLocalizations.of(context)!.selectAClass),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.book),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ManageSubjectsScreen()),
-              );
+          PopupMenuButton<Locale>(
+            onSelected: (Locale locale) {
+              appKey.currentState?.setLocale(locale);
             },
-            tooltip: 'Manage Subjects',
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<Locale>(
+                  value: Locale('en'),
+                  child: Text('English'),
+                ),
+                // Temporarily disabled - still causing issues
+                // const PopupMenuItem<Locale>(
+                //   value: Locale('om'),
+                //   child: Text('Afaan Oromoo'),
+                // ),
+                const PopupMenuItem<Locale>(
+                  value: Locale('am'),
+                  child: Text('አማርኛ'),
+                ),
+              ];
+            },
+            icon: const Icon(Icons.language),
+            tooltip: 'Change Language',
           ),
         ],
       ),
@@ -84,8 +96,8 @@ class ClassSelectionScreen extends StatelessWidget {
         valueListenable: Hive.box<ClassSection>('class_sections').listenable(),
         builder: (context, Box<ClassSection> box, _) {
           if (box.values.isEmpty) {
-            return const Center(
-              child: Text('No classes found. Tap + to add one.'),
+            return Center(
+              child: Text(AppLocalizations.of(context)!.noClassesFound),
             );
           }
           return ListView.builder(
@@ -96,13 +108,15 @@ class ClassSelectionScreen extends StatelessWidget {
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.class_, color: Colors.indigo),
-                  title: Text(classSection.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(classSection.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => StudentRosterScreen(classSection: classSection),
+                        builder: (context) =>
+                            StudentRosterScreen(classSection: classSection),
                       ),
                     );
                   },
