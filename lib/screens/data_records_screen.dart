@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:smart_school_assistant/models.dart';
+import 'package:smart_school_assistant/services/backup_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 class DataRecordsScreen extends StatefulWidget {
   const DataRecordsScreen({super.key});
@@ -220,6 +222,107 @@ class _DataRecordsScreenState extends State<DataRecordsScreen> {
     }
   }
 
+  Widget _buildFilterDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+    return Row(
+      children: [
+        Text('$label: ', style: const TextStyle(color: Colors.white, fontSize: 14)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              underline: const SizedBox(),
+              items: items.map((item) {
+                return DropdownMenuItem(
+                  value: item,
+                  child: Text(item, style: const TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _createBackup(BuildContext context) async {
+    try {
+      await BackupService.saveBackupToFile();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data Records backup created and shared successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create backup: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreBackup(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore Data Records Backup'),
+        content: const Text(
+          'This will replace all current data records with the backup data. '
+          'This action cannot be undone. Are you sure you want to continue?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final results = await BackupService.importFromFile();
+      if (results != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data Records restored successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No backup file selected'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to restore backup: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -227,89 +330,75 @@ class _DataRecordsScreenState extends State<DataRecordsScreen> {
         title: const Text('Data Records Management'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.backup),
+            onPressed: () => _createBackup(context),
+            tooltip: 'Backup Data Records',
+          ),
+          IconButton(
+            icon: const Icon(Icons.restore),
+            onPressed: () => _restoreBackup(context),
+            tooltip: 'Restore Data Records',
+          ),
+        ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(140),
+          preferredSize: const Size.fromHeight(160),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search records...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 400;
+                return Column(
                   children: [
-                    const Text('Category: ', style: TextStyle(color: Colors.white)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search records...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: DropdownButton<String>(
-                          value: _selectedCategory,
-                          isExpanded: true,
-                          underline: const SizedBox(),
-                          items: _categories.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value!;
-                            });
-                          },
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 12 : 16,
+                          vertical: isSmallScreen ? 8 : 12,
                         ),
                       ),
+                      style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
                     ),
+                    const SizedBox(height: 8),
+                    isSmallScreen
+                        ? Column(
+                            children: [
+                              _buildFilterDropdown('Category', _selectedCategory, _categories, (value) {
+                                setState(() => _selectedCategory = value!);
+                              }),
+                              const SizedBox(height: 8),
+                              _buildFilterDropdown('Status', _selectedStatus, _statuses, (value) {
+                                setState(() => _selectedStatus = value!);
+                              }),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: _buildFilterDropdown('Category', _selectedCategory, _categories, (value) {
+                                  setState(() => _selectedCategory = value!);
+                                }),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildFilterDropdown('Status', _selectedStatus, _statuses, (value) {
+                                  setState(() => _selectedStatus = value!);
+                                }),
+                              ),
+                            ],
+                          ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text('Status: ', style: TextStyle(color: Colors.white)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButton<String>(
-                          value: _selectedStatus,
-                          isExpanded: true,
-                          underline: const SizedBox(),
-                          items: _statuses.map((status) {
-                            return DropdownMenuItem(
-                              value: status,
-                              child: Text(status),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedStatus = value!;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                );
+              },
             ),
           ),
         ),
@@ -325,24 +414,50 @@ class _DataRecordsScreenState extends State<DataRecordsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 color: Colors.blue.shade50,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Records: ${filteredRecords.length}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Categories: ${_categories.length - 1}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isSmallScreen = constraints.maxWidth < 400;
+                    return isSmallScreen
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total Records: ${filteredRecords.length}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Categories: ${_categories.length - 1}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Records: ${filteredRecords.length}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Categories: ${_categories.length - 1}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          );
+                  },
                 ),
               ),
               Expanded(
@@ -390,59 +505,119 @@ class _DataRecordsScreenState extends State<DataRecordsScreen> {
                                     ),
                                 ],
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(record.status),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      record.status,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () {
-                                      // TODO: Implement edit functionality
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Edit functionality - Coming Soon')),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Delete Record'),
-                                          content: Text('Are you sure you want to delete "${record.title}"?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(context).pop(),
-                                              child: const Text('Cancel'),
+                              trailing: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final isSmallScreen = constraints.maxWidth < 400;
+                                  return isSmallScreen
+                                      ? PopupMenuButton<String>(
+                                          onSelected: (value) {
+                                            switch (value) {
+                                              case 'edit':
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Edit functionality - Coming Soon')),
+                                                );
+                                                break;
+                                              case 'delete':
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: const Text('Delete Record'),
+                                                    content: Text('Are you sure you want to delete "${record.title}"?'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.of(context).pop(),
+                                                        child: const Text('Cancel'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          record.delete();
+                                                          Navigator.of(context).pop();
+                                                        },
+                                                        child: const Text('Delete'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                                break;
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit, color: Colors.blue, size: 20),
+                                                  SizedBox(width: 8),
+                                                  Text('Edit'),
+                                                ],
+                                              ),
                                             ),
-                                            TextButton(
-                                              onPressed: () {
-                                                record.delete();
-                                                Navigator.of(context).pop();
-                                              },
-                                              child: const Text('Delete'),
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.delete, color: Colors.red, size: 20),
+                                                  SizedBox(width: 8),
+                                                  Text('Delete'),
+                                                ],
+                                              ),
                                             ),
                                           ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                                        )
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: _getStatusColor(record.status),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                record.status,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.edit, color: Colors.blue),
+                                              onPressed: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Edit functionality - Coming Soon')),
+                                                );
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete, color: Colors.red),
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: const Text('Delete Record'),
+                                                    content: Text('Are you sure you want to delete "${record.title}"?'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.of(context).pop(),
+                                                        child: const Text('Cancel'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          record.delete();
+                                                          Navigator.of(context).pop();
+                                                        },
+                                                        child: const Text('Delete'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                },
                               ),
                               onTap: () {
                                 // Show full record details

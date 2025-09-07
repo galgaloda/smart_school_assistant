@@ -5,6 +5,9 @@ import 'teacher_assistant/class_selection_screen.dart';
 import 'timetable/manage_teachers_screen.dart';
 import 'teacher_assistant/manage_subjects_screen.dart';
 import 'student_registration_screen.dart';
+import 'class_assignment_screen.dart';
+import '../services/backup_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 class ManagementHubScreen extends StatefulWidget {
   const ManagementHubScreen({super.key});
@@ -39,6 +42,79 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
     });
   }
 
+  Future<void> _createBackup(BuildContext context) async {
+    try {
+      await BackupService.saveBackupToFile();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Management data backup created and shared successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create backup: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreBackup(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore Management Data Backup'),
+        content: const Text(
+          'This will replace all current management data (classes, teachers, students, subjects) with the backup data. '
+          'This action cannot be undone. Are you sure you want to continue?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final results = await BackupService.importFromFile();
+      if (results != null) {
+        // Refresh statistics after restore
+        await _loadStatistics();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Management data restored successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No backup file selected'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to restore backup: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,6 +122,18 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
         title: const Text('Management Hub'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.backup),
+            onPressed: () => _createBackup(context),
+            tooltip: 'Backup Management Data',
+          ),
+          IconButton(
+            icon: const Icon(Icons.restore),
+            onPressed: () => _restoreBackup(context),
+            tooltip: 'Restore Management Data',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -92,17 +180,24 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.5,
-              children: [
-                _buildStatCard('Classes', _totalClasses.toString(), Icons.class_, Colors.blue),
-                _buildStatCard('Teachers', _totalTeachers.toString(), Icons.person, Colors.green),
-                _buildStatCard('Students', _totalStudents.toString(), Icons.people, Colors.orange),
-                _buildStatCard('Subjects', _totalSubjects.toString(), Icons.book, Colors.purple),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+                return GridView.count(
+                  crossAxisCount: crossAxisCount,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.5,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  children: [
+                    _buildStatCard('Classes', _totalClasses.toString(), Icons.class_, Colors.blue),
+                    _buildStatCard('Teachers', _totalTeachers.toString(), Icons.person, Colors.green),
+                    _buildStatCard('Students', _totalStudents.toString(), Icons.people, Colors.orange),
+                    _buildStatCard('Subjects', _totalSubjects.toString(), Icons.book, Colors.purple),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -157,53 +252,60 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.2,
-          children: [
-            _buildManagementCard(
-              'Classes',
-              'Manage class sections and details',
-              Icons.class_,
-              Colors.blue,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ClassSelectionScreen()),
-              ),
-            ),
-            _buildManagementCard(
-              'Teachers',
-              'Manage teacher profiles and assignments',
-              Icons.person,
-              Colors.green,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ManageTeachersScreen()),
-              ),
-            ),
-            _buildManagementCard(
-              'Students',
-              'Manage student records and progress',
-              Icons.people,
-              Colors.orange,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const StudentManagementScreen()),
-              ),
-            ),
-            _buildManagementCard(
-              'Subjects',
-              'Manage subjects and curriculum',
-              Icons.book,
-              Colors.purple,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ManageSubjectsScreen()),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: constraints.maxWidth > 600 ? 1.3 : 1.2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              children: [
+                _buildManagementCard(
+                  'Classes',
+                  'Manage class sections and details',
+                  Icons.class_,
+                  Colors.blue,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ClassSelectionScreen()),
+                  ),
+                ),
+                _buildManagementCard(
+                  'Teachers',
+                  'Manage teacher profiles and assignments',
+                  Icons.person,
+                  Colors.green,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ManageTeachersScreen()),
+                  ),
+                ),
+                _buildManagementCard(
+                  'Students',
+                  'Manage student records and progress',
+                  Icons.people,
+                  Colors.orange,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const StudentManagementScreen()),
+                  ),
+                ),
+                _buildManagementCard(
+                  'Subjects',
+                  'Manage subjects and curriculum',
+                  Icons.book,
+                  Colors.purple,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ManageSubjectsScreen()),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -267,17 +369,24 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildQuickActionChip('Register Student', Icons.person_add_alt, Colors.orange, _registerNewStudent),
-                _buildQuickActionChip('Add Class', Icons.add, Colors.blue, _addNewClass),
-                _buildQuickActionChip('Add Teacher', Icons.person_add, Colors.green, _addNewTeacher),
-                _buildQuickActionChip('Add Subject', Icons.library_add, Colors.purple, _addNewSubject),
-                _buildQuickActionChip('Generate Report', Icons.assessment, Colors.teal, _generateQuickReport),
-                _buildQuickActionChip('Backup Data', Icons.backup, Colors.red, _backupData),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 400;
+                return Wrap(
+                  spacing: isSmallScreen ? 4 : 8,
+                  runSpacing: isSmallScreen ? 4 : 8,
+                  alignment: WrapAlignment.start,
+                  children: [
+                    _buildQuickActionChip('Register Student', Icons.person_add_alt, Colors.orange, _registerNewStudent, isSmallScreen),
+                    _buildQuickActionChip('Assign to Class', Icons.assignment_ind, Colors.teal, _assignStudentsToClass, isSmallScreen),
+                    _buildQuickActionChip('Add Class', Icons.add, Colors.blue, _addNewClass, isSmallScreen),
+                    _buildQuickActionChip('Add Teacher', Icons.person_add, Colors.green, _addNewTeacher, isSmallScreen),
+                    _buildQuickActionChip('Add Subject', Icons.library_add, Colors.purple, _addNewSubject, isSmallScreen),
+                    _buildQuickActionChip('Generate Report', Icons.assessment, Colors.teal, _generateQuickReport, isSmallScreen),
+                    _buildQuickActionChip('Backup Data', Icons.backup, Colors.red, _backupData, isSmallScreen),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -285,13 +394,20 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
     );
   }
 
-  Widget _buildQuickActionChip(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildQuickActionChip(String label, IconData icon, Color color, VoidCallback onTap, [bool isSmallScreen = false]) {
     return ActionChip(
-      avatar: Icon(icon, color: color, size: 18),
-      label: Text(label),
+      avatar: Icon(icon, color: color, size: isSmallScreen ? 16 : 18),
+      label: Text(
+        label,
+        style: TextStyle(fontSize: isSmallScreen ? 11 : 12),
+      ),
       onPressed: onTap,
       backgroundColor: color.withOpacity(0.1),
-      labelStyle: TextStyle(color: color, fontSize: 12),
+      labelStyle: TextStyle(color: color, fontSize: isSmallScreen ? 11 : 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 6 : 8,
+        vertical: isSmallScreen ? 4 : 6,
+      ),
     );
   }
 
@@ -355,6 +471,13 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
     );
   }
 
+  void _assignStudentsToClass() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ClassAssignmentScreen()),
+    );
+  }
+
   void _addNewClass() {
     Navigator.push(
       context,
@@ -409,6 +532,77 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   String _selectedGradeFilter = 'All Grades';
   String _selectedClassFilter = 'All Classes';
 
+  Future<void> _createStudentBackup(BuildContext context) async {
+    try {
+      await BackupService.saveBackupToFile();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Student data backup created and shared successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create backup: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreStudentBackup(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore Student Data Backup'),
+        content: const Text(
+          'This will replace all current student data with the backup data. '
+          'This action cannot be undone. Are you sure you want to continue?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final results = await BackupService.importFromFile();
+      if (results != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Student data restored successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No backup file selected'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to restore backup: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -417,6 +611,16 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.backup),
+            onPressed: () => _createStudentBackup(context),
+            tooltip: 'Backup Student Data',
+          ),
+          IconButton(
+            icon: const Icon(Icons.restore),
+            onPressed: () => _restoreStudentBackup(context),
+            tooltip: 'Restore Student Data',
+          ),
           IconButton(
             icon: const Icon(Icons.person_add),
             onPressed: () {
@@ -676,16 +880,156 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   }
 
   void _assignToClass(BuildContext context, Student student) {
-    // TODO: Implement class assignment functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Class assignment for ${student.fullName} - Coming soon!')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClassAssignmentScreen(targetClassId: student.classSectionId),
+      ),
     );
   }
 
   void _editStudent(BuildContext context, Student student) {
-    // TODO: Implement student editing functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit functionality for ${student.fullName} - Coming soon!')),
+    _showEditStudentDialog(context, student);
+  }
+
+  void _showEditStudentDialog(BuildContext context, Student student) {
+    final fullNameController = TextEditingController(text: student.fullName);
+    final phoneController = TextEditingController(text: student.phoneNumber ?? '');
+    final addressController = TextEditingController(text: student.address ?? '');
+    final emergencyContactNameController = TextEditingController(text: student.emergencyContactName ?? '');
+    final emergencyContactPhoneController = TextEditingController(text: student.emergencyContactPhone ?? '');
+    final emailController = TextEditingController(text: student.email ?? '');
+    final studentIdController = TextEditingController(text: student.studentId ?? '');
+    final bloodTypeController = TextEditingController(text: student.bloodType ?? '');
+    final medicalConditionsController = TextEditingController(text: student.medicalConditions ?? '');
+    final nationalityController = TextEditingController(text: student.nationality ?? '');
+    final religionController = TextEditingController(text: student.religion ?? '');
+
+    String selectedGender = student.gender;
+    String selectedGrade = student.grade ?? 'Grade 1';
+    DateTime? selectedDateOfBirth = student.dateOfBirth;
+    DateTime? selectedEnrollmentDate = student.enrollmentDate;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Edit Student: ${student.fullName}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: fullNameController,
+                  decoration: const InputDecoration(labelText: 'Full Name *'),
+                ),
+                TextField(
+                  controller: studentIdController,
+                  decoration: const InputDecoration(labelText: 'Student ID'),
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedGender,
+                  decoration: const InputDecoration(labelText: 'Gender *'),
+                  items: ['Male', 'Female', 'Other'].map((gender) =>
+                    DropdownMenuItem(value: gender, child: Text(gender))
+                  ).toList(),
+                  onChanged: (value) => setState(() => selectedGender = value!),
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedGrade,
+                  decoration: const InputDecoration(labelText: 'Grade *'),
+                  items: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5',
+                         'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10',
+                         'Grade 11', 'Grade 12'].map((grade) =>
+                    DropdownMenuItem(value: grade, child: Text(grade))
+                  ).toList(),
+                  onChanged: (value) => setState(() => selectedGrade = value!),
+                ),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Phone Number'),
+                  keyboardType: TextInputType.phone,
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                  maxLines: 2,
+                ),
+                TextField(
+                  controller: emergencyContactNameController,
+                  decoration: const InputDecoration(labelText: 'Emergency Contact Name'),
+                ),
+                TextField(
+                  controller: emergencyContactPhoneController,
+                  decoration: const InputDecoration(labelText: 'Emergency Contact Phone'),
+                  keyboardType: TextInputType.phone,
+                ),
+                TextField(
+                  controller: bloodTypeController,
+                  decoration: const InputDecoration(labelText: 'Blood Type'),
+                ),
+                TextField(
+                  controller: medicalConditionsController,
+                  decoration: const InputDecoration(labelText: 'Medical Conditions'),
+                  maxLines: 2,
+                ),
+                TextField(
+                  controller: nationalityController,
+                  decoration: const InputDecoration(labelText: 'Nationality'),
+                ),
+                TextField(
+                  controller: religionController,
+                  decoration: const InputDecoration(labelText: 'Religion'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (fullNameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Full name is required')),
+                  );
+                  return;
+                }
+
+                // Update student data
+                student.fullName = fullNameController.text.trim();
+                student.gender = selectedGender;
+                student.grade = selectedGrade;
+                student.phoneNumber = phoneController.text.trim().isEmpty ? null : phoneController.text.trim();
+                student.email = emailController.text.trim().isEmpty ? null : emailController.text.trim();
+                student.address = addressController.text.trim().isEmpty ? null : addressController.text.trim();
+                student.emergencyContactName = emergencyContactNameController.text.trim().isEmpty ? null : emergencyContactNameController.text.trim();
+                student.emergencyContactPhone = emergencyContactPhoneController.text.trim().isEmpty ? null : emergencyContactPhoneController.text.trim();
+                student.studentId = studentIdController.text.trim().isEmpty ? null : studentIdController.text.trim();
+                student.bloodType = bloodTypeController.text.trim().isEmpty ? null : bloodTypeController.text.trim();
+                student.medicalConditions = medicalConditionsController.text.trim().isEmpty ? null : medicalConditionsController.text.trim();
+                student.nationality = nationalityController.text.trim().isEmpty ? null : nationalityController.text.trim();
+                student.religion = religionController.text.trim().isEmpty ? null : religionController.text.trim();
+
+                await student.save();
+
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${student.fullName} updated successfully!')),
+                );
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

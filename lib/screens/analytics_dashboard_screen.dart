@@ -271,19 +271,26 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildKPICards() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
-      children: [
-        _buildKPICard('Total Students', _totalStudents.toString(), Icons.people, Colors.blue),
-        _buildKPICard('Total Classes', _totalClasses.toString(), Icons.class_, Colors.green),
-        _buildKPICard('Average Attendance', '${_averageAttendance.toStringAsFixed(1)}%', Icons.check_circle, Colors.orange),
-        _buildKPICard('Average Grade', '${_averageGrade.toStringAsFixed(1)}%', Icons.grade, Colors.purple),
-        _buildKPICard('Total Subjects', _totalSubjects.toString(), Icons.book, Colors.teal),
-        _buildKPICard('Total Teachers', _totalTeachers.toString(), Icons.person, Colors.indigo),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          children: [
+            _buildKPICard('Total Students', _totalStudents.toString(), Icons.people, Colors.blue),
+            _buildKPICard('Total Classes', _totalClasses.toString(), Icons.class_, Colors.green),
+            _buildKPICard('Average Attendance', '${_averageAttendance.toStringAsFixed(1)}%', Icons.check_circle, Colors.orange),
+            _buildKPICard('Average Grade', '${_averageGrade.toStringAsFixed(1)}%', Icons.grade, Colors.purple),
+            _buildKPICard('Total Subjects', _totalSubjects.toString(), Icons.book, Colors.teal),
+            _buildKPICard('Total Teachers', _totalTeachers.toString(), Icons.person, Colors.indigo),
+          ],
+        );
+      },
     );
   }
 
@@ -389,14 +396,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         _buildChartCard(
           'Grade Distribution',
           'Overall grade distribution across all students',
-          SizedBox(
-            height: 200,
-            child: PieChart(
-              PieChartData(
-                sections: _gradeDistribution,
-                sectionsSpace: 2,
-                centerSpaceRadius: 40,
-              ),
+          PieChart(
+            PieChartData(
+              sections: _gradeDistribution,
+              sectionsSpace: 2,
+              centerSpaceRadius: 40,
             ),
           ),
         ),
@@ -407,31 +411,28 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         _buildChartCard(
           'Subject Performance',
           'Average performance by subject',
-          SizedBox(
-            height: 200,
-            child: BarChart(
-              BarChartData(
-                barGroups: _subjectPerformance,
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final subjects = Hive.box<Subject>('subjects').values.toList();
-                        if (value.toInt() < subjects.length) {
-                          return Text(
-                            subjects[value.toInt()].name,
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        }
-                        return const Text('');
-                      },
-                    ),
+          BarChart(
+            BarChartData(
+              barGroups: _subjectPerformance,
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      final subjects = Hive.box<Subject>('subjects').values.toList();
+                      if (value.toInt() < subjects.length) {
+                        return Text(
+                          subjects[value.toInt()].name,
+                          style: const TextStyle(fontSize: 10),
+                        );
+                      }
+                      return const Text('');
+                    },
                   ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: true),
-                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: true),
                 ),
               ),
             ),
@@ -444,31 +445,28 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         _buildChartCard(
           'Attendance Trend (Last 7 Days)',
           'Daily attendance rate over the past week',
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                lineBarsData: _attendanceTrend,
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                        if (value.toInt() < days.length) {
-                          return Text(days[value.toInt()]);
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: true),
+          LineChart(
+            LineChartData(
+              lineBarsData: _attendanceTrend,
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                      if (value.toInt() < days.length) {
+                        return Text(days[value.toInt()]);
+                      }
+                      return const Text('');
+                    },
                   ),
                 ),
-                borderData: FlBorderData(show: true),
-                gridData: FlGridData(show: true),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: true),
+                ),
               ),
+              borderData: FlBorderData(show: true),
+              gridData: FlGridData(show: true),
             ),
           ),
         ),
@@ -479,14 +477,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         _buildChartCard(
           'Class Distribution',
           'Number of students per class',
-          SizedBox(
-            height: 200,
-            child: PieChart(
-              PieChartData(
-                sections: _classDistribution,
-                sectionsSpace: 2,
-                centerSpaceRadius: 30,
-              ),
+          PieChart(
+            PieChartData(
+              sections: _classDistribution,
+              sectionsSpace: 2,
+              centerSpaceRadius: 30,
             ),
           ),
         ),
@@ -499,27 +494,39 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 16),
-            chart,
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 400;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 11 : 12,
+                    color: Colors.grey,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: isSmallScreen ? 150 : 200,
+                  child: chart,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
