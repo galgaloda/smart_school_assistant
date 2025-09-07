@@ -29,10 +29,12 @@ Future<void> main() async {
   Hive.registerAdapter(AssessmentAdapter());
   Hive.registerAdapter(SemesterAdapter());
   Hive.registerAdapter(AssessmentScoreAdapter());
-  await Hive.openBox<ClassSection>('class_sections');
+
+  // Open all Hive boxes
   await Hive.openBox<Student>('students');
   await Hive.openBox<Teacher>('teachers');
   await Hive.openBox<Subject>('subjects');
+  await Hive.openBox<ClassSection>('class_sections');
   await Hive.openBox<AttendanceRecord>('attendance_records');
   await Hive.openBox<Score>('scores');
   await Hive.openBox<Period>('periods');

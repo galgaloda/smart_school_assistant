@@ -22,7 +22,79 @@ class Student extends HiveObject {
   @HiveField(5)
   String classSectionId; // Links to a ClassSection
 
-  Student({required this.id, required this.fullName, this.photoPath, required this.dateOfBirth, required this.gender, required this.classSectionId});
+  @HiveField(6)
+  String? phoneNumber;
+
+  @HiveField(7)
+  String? address;
+
+  @HiveField(8)
+  String? emergencyContactName;
+
+  @HiveField(9)
+  String? emergencyContactPhone;
+
+  @HiveField(10)
+  String? email;
+
+  @HiveField(11)
+  DateTime? enrollmentDate;
+
+  @HiveField(12)
+  String? studentId; // School ID number
+
+  @HiveField(13)
+  String? grade; // Grade level (e.g., "Grade 7", "Grade 8")
+
+  @HiveField(14)
+  String? bloodType;
+
+  @HiveField(15)
+  String? medicalConditions;
+
+  @HiveField(16)
+  String? nationality;
+
+  @HiveField(17)
+  String? religion;
+
+  Student({
+    required this.id,
+    required this.fullName,
+    this.photoPath,
+    required this.dateOfBirth,
+    required this.gender,
+    required this.classSectionId,
+    this.phoneNumber,
+    this.address,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.email,
+    this.enrollmentDate,
+    this.studentId,
+    this.grade,
+    this.bloodType,
+    this.medicalConditions,
+    this.nationality,
+    this.religion,
+  });
+
+  // Helper method to calculate age
+  int get age {
+    final now = DateTime.now();
+    int age = now.year - dateOfBirth.year;
+    if (now.month < dateOfBirth.month ||
+        (now.month == dateOfBirth.month && now.day < dateOfBirth.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  // Helper method to get formatted enrollment date
+  String get formattedEnrollmentDate {
+    if (enrollmentDate == null) return 'Not set';
+    return '${enrollmentDate!.day}/${enrollmentDate!.month}/${enrollmentDate!.year}';
+  }
 }
 
 @HiveType(typeId: 1)

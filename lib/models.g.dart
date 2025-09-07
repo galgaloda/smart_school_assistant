@@ -23,13 +23,25 @@ class StudentAdapter extends TypeAdapter<Student> {
       dateOfBirth: fields[3] as DateTime,
       gender: fields[4] as String,
       classSectionId: fields[5] as String,
+      phoneNumber: fields[6] as String?,
+      address: fields[7] as String?,
+      emergencyContactName: fields[8] as String?,
+      emergencyContactPhone: fields[9] as String?,
+      email: fields[10] as String?,
+      enrollmentDate: fields[11] as DateTime?,
+      studentId: fields[12] as String?,
+      grade: fields[13] as String?,
+      bloodType: fields[14] as String?,
+      medicalConditions: fields[15] as String?,
+      nationality: fields[16] as String?,
+      religion: fields[17] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Student obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +53,31 @@ class StudentAdapter extends TypeAdapter<Student> {
       ..writeByte(4)
       ..write(obj.gender)
       ..writeByte(5)
-      ..write(obj.classSectionId);
+      ..write(obj.classSectionId)
+      ..writeByte(6)
+      ..write(obj.phoneNumber)
+      ..writeByte(7)
+      ..write(obj.address)
+      ..writeByte(8)
+      ..write(obj.emergencyContactName)
+      ..writeByte(9)
+      ..write(obj.emergencyContactPhone)
+      ..writeByte(10)
+      ..write(obj.email)
+      ..writeByte(11)
+      ..write(obj.enrollmentDate)
+      ..writeByte(12)
+      ..write(obj.studentId)
+      ..writeByte(13)
+      ..write(obj.grade)
+      ..writeByte(14)
+      ..write(obj.bloodType)
+      ..writeByte(15)
+      ..write(obj.medicalConditions)
+      ..writeByte(16)
+      ..write(obj.nationality)
+      ..writeByte(17)
+      ..write(obj.religion);
   }
 
   @override
