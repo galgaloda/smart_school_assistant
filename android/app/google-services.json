@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "893583360512",
+    "project_id": "smart-school-assistant-b9340",
+    "storage_bucket": "smart-school-assistant-b9340.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:893583360512:android:2c331acced876ff7d98ee5",
+        "android_client_info": {
+          "package_name": "com.example.smart_school_assistant"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "893583360512-qse8pjel568rp130or9ve84erlhmqq8c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRuNh2zL4Q4jLdnwdAv-qHiccBkPzaJzk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "893583360512-qse8pjel568rp130or9ve84erlhmqq8c.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "893583360512-7uogj9jco26f8q4h7hko97mlvavd3ak8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.smartSchoolAssistant"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

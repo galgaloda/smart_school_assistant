@@ -93,12 +93,10 @@ class AppTheme {
         secondary: secondaryColor,
         secondaryContainer: secondaryLight,
         surface: surfaceColor,
-        background: backgroundColor,
         error: errorColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: textPrimary,
-        onBackground: textPrimary,
         onError: Colors.white,
       ),
 
@@ -401,12 +399,12 @@ class AppTheme {
 
       // DataTable Theme
       dataTableTheme: const DataTableThemeData(
-        headingRowColor: MaterialStatePropertyAll(primaryColor),
+        headingRowColor: WidgetStatePropertyAll(primaryColor),
         headingTextStyle: TextStyle(
           color: Colors.white,
           fontWeight: fontWeightSemiBold,
         ),
-        dataRowColor: MaterialStatePropertyAll(surfaceColor),
+        dataRowColor: WidgetStatePropertyAll(surfaceColor),
         dividerThickness: 1,
       ),
 
@@ -477,12 +475,10 @@ class AppTheme {
         secondary: secondaryLight,
         secondaryContainer: secondaryColor,
         surface: Color(0xFF121212),
-        background: Color(0xFF121212),
         error: errorColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: Colors.white,
-        onBackground: Colors.white,
         onError: Colors.white,
       ),
 
@@ -734,7 +730,7 @@ class AppTheme {
         backgroundColor: const Color(0xFF2A2A2A),
         selectedColor: primaryColor,
         checkmarkColor: Colors.white,
-        deleteIconColor: Color(0xFFB0B0B0),
+        deleteIconColor: const Color(0xFFB0B0B0),
         labelStyle: const TextStyle(
           color: Colors.white,
           fontSize: fontSizeS,
@@ -750,12 +746,12 @@ class AppTheme {
 
       // DataTable Theme
       dataTableTheme: const DataTableThemeData(
-        headingRowColor: MaterialStatePropertyAll(primaryColor),
+        headingRowColor: WidgetStatePropertyAll(primaryColor),
         headingTextStyle: TextStyle(
           color: Colors.white,
           fontWeight: fontWeightSemiBold,
         ),
-        dataRowColor: MaterialStatePropertyAll(Color(0xFF1E1E1E)),
+        dataRowColor: WidgetStatePropertyAll(Color(0xFF1E1E1E)),
         dividerThickness: 1,
       ),
 
@@ -841,13 +837,13 @@ class AppTheme {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             size: 64,
             color: errorColor,
           ),
           const SizedBox(height: spacingM),
-          Text(
+          const Text(
             'Error',
             style: TextStyle(
               fontSize: fontSizeXL,
@@ -895,7 +891,7 @@ class AppTheme {
           const SizedBox(height: spacingM),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: fontSizeXL,
               fontWeight: fontWeightSemiBold,
               color: textPrimary,

@@ -1,0 +1,387 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../models.dart';
+import '../models/user_role.dart' as user_role;
+import 'firebase_service.dart';
+import 'encryption_service.dart';
+
+/// Enhanced cross-device synchronization service for user data
+class CrossDeviceSyncService {
+  static const String _userSyncCollection = 'user_sync_data';
+  static const String _deviceCollection = 'user_devices';
+  static const Duration _syncInterval = Duration(minutes: 5);
+
+  static Timer? _syncTimer;
+  static StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  static bool _isOnline = false;
+
+  /// Initialize cross-device sync service
+  static Future<void> initialize() async {
+    try {
+      // Check initial connectivity
+      await _checkConnectivity();
+
+      // Set up connectivity monitoring
+      _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+        (List<ConnectivityResult> results) {
+          final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+          _handleConnectivityChange(result);
+        },
+      );
+
+      // Start periodic sync
+      _startPeriodicSync();
+
+      print('[CROSS_DEVICE] Cross-device sync service initialized');
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to initialize cross-device sync: $e');
+      rethrow;
+    }
+  }
+
+  /// Check current connectivity status
+  static Future<void> _checkConnectivity() async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      _isOnline = connectivityResult != ConnectivityResult.none;
+      print('[CROSS_DEVICE] Initial connectivity check: $_isOnline');
+    } catch (e) {
+      print('[CROSS_DEVICE] Connectivity check failed: $e');
+      _isOnline = false;
+    }
+  }
+
+  /// Handle connectivity changes
+  static void _handleConnectivityChange(ConnectivityResult result) {
+    final wasOnline = _isOnline;
+    _isOnline = result != ConnectivityResult.none;
+
+    if (!wasOnline && _isOnline) {
+      print('[CROSS_DEVICE] Connection restored - triggering sync');
+      _performImmediateSync();
+    } else if (wasOnline && !_isOnline) {
+      print('[CROSS_DEVICE] Connection lost');
+    }
+  }
+
+  /// Start periodic synchronization
+  static void _startPeriodicSync() {
+    _syncTimer = Timer.periodic(_syncInterval, (timer) {
+      if (_isOnline && FirebaseService.isAuthenticated) {
+        _performPeriodicSync();
+      }
+    });
+    print('[CROSS_DEVICE] Periodic sync started (interval: ${_syncInterval.inMinutes} minutes)');
+  }
+
+  /// Perform immediate synchronization
+  static Future<void> _performImmediateSync() async {
+    if (!FirebaseService.isAuthenticated) {
+      print('[CROSS_DEVICE] Skipping sync - user not authenticated');
+      return;
+    }
+
+    try {
+      await _syncUserData();
+      await _syncDeviceInfo();
+      print('[CROSS_DEVICE] Immediate sync completed successfully');
+    } catch (e) {
+      print('[CROSS_DEVICE] Immediate sync failed: $e');
+    }
+  }
+
+  /// Perform periodic synchronization
+  static Future<void> _performPeriodicSync() async {
+    try {
+      print('[CROSS_DEVICE] Performing periodic sync');
+      await _syncUserData();
+      await _syncDeviceInfo();
+      print('[CROSS_DEVICE] Periodic sync completed successfully');
+    } catch (e) {
+      print('[CROSS_DEVICE] Periodic sync failed: $e');
+    }
+  }
+
+  /// Sync user data across devices
+  static Future<void> _syncUserData() async {
+    final currentUser = FirebaseService.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final userId = currentUser.uid;
+      final userDocRef = FirebaseService.firestore.collection(_userSyncCollection).doc(userId);
+
+      // Get local user data
+      final usersBox = Hive.box<User>('users');
+      final localUser = usersBox.get(userId);
+
+      if (localUser == null) {
+        print('[CROSS_DEVICE] No local user data found for sync');
+        return;
+      }
+
+      // Prepare sync data
+      final syncData = {
+        'userId': localUser.id,
+        'email': localUser.email,
+        'displayName': localUser.displayName,
+        'role': localUser.role,
+        'schoolName': localUser.schoolName,
+        'schoolAddress': localUser.schoolAddress,
+        'schoolPhone': localUser.schoolPhone,
+        'isActive': localUser.isActive,
+        'createdAt': localUser.createdAt.toIso8601String(),
+        'lastLoginAt': localUser.lastLoginAt?.toIso8601String(),
+        'lastSyncAt': DateTime.now().toIso8601String(),
+        'deviceId': await _getDeviceId(),
+        'version': '1.0',
+      };
+
+      // Encrypt sensitive data
+      final encryptedSyncData = EncryptionService.encryptUserData(syncData);
+
+      // Sync to cloud
+      await userDocRef.set({
+        'encryptedData': encryptedSyncData,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'deviceId': await _getDeviceId(),
+      }, SetOptions(merge: true));
+
+      print('[CROSS_DEVICE] User data synced to cloud successfully');
+
+      // Check for updates from other devices
+      await _checkForRemoteUpdates(userId);
+
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to sync user data: $e');
+      throw Exception('Failed to sync user data: $e');
+    }
+  }
+
+  /// Check for updates from other devices
+  static Future<void> _checkForRemoteUpdates(String userId) async {
+    try {
+      final userDocRef = FirebaseService.firestore.collection(_userSyncCollection).doc(userId);
+      final docSnapshot = await userDocRef.get();
+
+      if (!docSnapshot.exists) return;
+
+      final data = docSnapshot.data();
+      if (data == null) return;
+
+      final remoteDeviceId = data['deviceId'] as String?;
+      final currentDeviceId = await _getDeviceId();
+
+      // If update is from another device, sync it locally
+      if (remoteDeviceId != null && remoteDeviceId != currentDeviceId) {
+        print('[CROSS_DEVICE] Remote update detected from device: $remoteDeviceId');
+
+        final encryptedData = data['encryptedData'] as String?;
+        if (encryptedData != null) {
+          final remoteData = EncryptionService.decryptUserData(encryptedData);
+
+          // Update local user data if needed
+          await _updateLocalUserFromRemote(remoteData);
+        }
+      }
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to check for remote updates: $e');
+    }
+  }
+
+  /// Update local user data from remote sync
+  static Future<void> _updateLocalUserFromRemote(Map<String, dynamic> remoteData) async {
+    try {
+      final usersBox = Hive.box<User>('users');
+      final userId = remoteData['userId'] as String;
+
+      final existingUser = usersBox.get(userId);
+      if (existingUser == null) return;
+
+      // Only update if remote data is newer
+      final remoteLastLogin = remoteData['lastLoginAt'] != null
+          ? DateTime.parse(remoteData['lastLoginAt'])
+          : null;
+
+      final shouldUpdate = remoteLastLogin != null &&
+          (existingUser.lastLoginAt == null || remoteLastLogin.isAfter(existingUser.lastLoginAt!));
+
+      if (shouldUpdate) {
+        existingUser.lastLoginAt = remoteLastLogin;
+        await usersBox.put(userId, existingUser);
+        print('[CROSS_DEVICE] Local user data updated from remote sync');
+      }
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to update local user from remote: $e');
+    }
+  }
+
+  /// Sync device information
+  static Future<void> _syncDeviceInfo() async {
+    final currentUser = FirebaseService.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final deviceId = await _getDeviceId();
+      final deviceDocRef = FirebaseService.firestore
+          .collection(_deviceCollection)
+          .doc('${currentUser.uid}_$deviceId');
+
+      final deviceInfo = {
+        'userId': currentUser.uid,
+        'deviceId': deviceId,
+        'deviceName': await _getDeviceName(),
+        'platform': await _getPlatform(),
+        'lastActive': FieldValue.serverTimestamp(),
+        'appVersion': '1.0.0',
+        'isActive': true,
+      };
+
+      await deviceDocRef.set(deviceInfo, SetOptions(merge: true));
+      print('[CROSS_DEVICE] Device info synced successfully');
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to sync device info: $e');
+    }
+  }
+
+  /// Get device ID
+  static Future<String> _getDeviceId() async {
+    try {
+      // Use Firebase installation ID or generate a unique device ID
+      // For now, we'll use a simple approach
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      return 'device_${timestamp.substring(timestamp.length - 8)}';
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to get device ID: $e');
+      return 'unknown_device';
+    }
+  }
+
+  /// Get device name
+  static Future<String> _getDeviceName() async {
+    try {
+      // This would typically use device_info_plus package
+      // For now, return a generic name
+      return 'Flutter Device';
+    } catch (e) {
+      return 'Unknown Device';
+    }
+  }
+
+  /// Get platform information
+  static Future<String> _getPlatform() async {
+    try {
+      // This would typically use device_info_plus package
+      // For now, return a generic platform
+      return 'Flutter';
+    } catch (e) {
+      return 'Unknown Platform';
+    }
+  }
+
+  /// Force immediate synchronization
+  static Future<void> forceSync() async {
+    if (!FirebaseService.isAuthenticated) {
+      throw Exception('User not authenticated');
+    }
+
+    if (!_isOnline) {
+      throw Exception('No internet connection');
+    }
+
+    print('[CROSS_DEVICE] Force sync initiated');
+    await _performImmediateSync();
+  }
+
+  /// Get synchronization status
+  static Map<String, dynamic> getSyncStatus() {
+    return {
+      'isOnline': _isOnline,
+      'isAuthenticated': FirebaseService.isAuthenticated,
+      'lastSyncTime': FirebaseService.getUserSession()?['lastSignIn'],
+      'syncInterval': _syncInterval.inMinutes,
+      'isPeriodicSyncActive': _syncTimer?.isActive ?? false,
+    };
+  }
+
+  /// Get list of user's devices
+  static Future<List<Map<String, dynamic>>> getUserDevices() async {
+    final currentUser = FirebaseService.currentUser;
+    if (currentUser == null) return [];
+
+    try {
+      final querySnapshot = await FirebaseService.firestore
+          .collection(_deviceCollection)
+          .where('userId', isEqualTo: currentUser.uid)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to get user devices: $e');
+      return [];
+    }
+  }
+
+  /// Deactivate a device
+  static Future<void> deactivateDevice(String deviceId) async {
+    final currentUser = FirebaseService.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final deviceDocRef = FirebaseService.firestore
+          .collection(_deviceCollection)
+          .doc('${currentUser.uid}_$deviceId');
+
+      await deviceDocRef.update({
+        'isActive': false,
+        'deactivatedAt': FieldValue.serverTimestamp(),
+      });
+
+      print('[CROSS_DEVICE] Device deactivated: $deviceId');
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to deactivate device: $e');
+      throw Exception('Failed to deactivate device');
+    }
+  }
+
+  /// Clean up old device records
+  static Future<void> cleanupOldDevices({Duration maxAge = const Duration(days: 90)}) async {
+    final currentUser = FirebaseService.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final cutoffDate = DateTime.now().subtract(maxAge);
+      final querySnapshot = await FirebaseService.firestore
+          .collection(_deviceCollection)
+          .where('userId', isEqualTo: currentUser.uid)
+          .where('lastActive', isLessThan: Timestamp.fromDate(cutoffDate))
+          .get();
+
+      final batch = FirebaseService.firestore.batch();
+      for (final doc in querySnapshot.docs) {
+        batch.update(doc.reference, {'isActive': false});
+      }
+
+      await batch.commit();
+      print('[CROSS_DEVICE] Cleaned up ${querySnapshot.docs.length} old device records');
+    } catch (e) {
+      print('[CROSS_DEVICE] Failed to cleanup old devices: $e');
+    }
+  }
+
+  /// Stop synchronization service
+  static void dispose() {
+    _syncTimer?.cancel();
+    _connectivitySubscription?.cancel();
+    print('[CROSS_DEVICE] Cross-device sync service disposed');
+  }
+
+  /// Manual sync trigger for testing
+  static Future<void> manualSync() async {
+    print('[CROSS_DEVICE] Manual sync triggered');
+    await forceSync();
+  }
+}

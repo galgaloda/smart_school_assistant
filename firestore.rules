@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // User-specific subcollections for data isolation
+      match /students/{studentId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /teachers/{teacherId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /subjects/{subjectId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /class_sections/{classId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /timetable_entries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /attendance_records/{recordId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /scores/{scoreId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /assessments/{assessmentId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /semesters/{semesterId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /inventory_items/{itemId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /data_records/{recordId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /assessment_scores/{scoreId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Legacy collections - deny access to prevent security issues
+    match /schools/{schoolId} {
+      allow read, write: if false;
+    }
+
+    match /classes/{classId} {
+      allow read, write: if false;
+    }
+
+    match /students/{studentId} {
+      allow read, write: if false;
+    }
+
+    match /teachers/{teacherId} {
+      allow read, write: if false;
+    }
+
+    // Sync metadata - allow authenticated users
+    match /sync/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

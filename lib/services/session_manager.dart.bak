@@ -1,0 +1,426 @@
+import 'dart:async';
+import 'package:flutter/widgets.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../models.dart';
+import '../models/user_role.dart' as user_role;
+import 'firebase_service.dart';
+import 'encryption_service.dart';
+import 'auth_middleware.dart';
+
+/// Comprehensive session management service
+class SessionManager {
+  static const String _sessionBoxName = 'user_sessions';
+  static const String _currentSessionKey = 'current_session';
+  static const String _sessionHistoryKey = 'session_history';
+  static const String _autoLoginKey = 'auto_login_enabled';
+  static const String _biometricKey = 'biometric_enabled';
+  static const Duration _sessionTimeout = Duration(hours: 24);
+  static const int _maxSessionHistory = 10;
+
+  static Timer? _sessionTimer;
+  static Timer? _activityTimer;
+  static DateTime? _lastActivity;
+  static bool _isInitialized = false;
+
+  /// Initialize session manager
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    try {
+      await _loadSessionData();
+      _setupActivityMonitoring();
+      _startSessionTimer();
+      _isInitialized = true;
+      print('[SESSION] Session manager initialized');
+    } catch (e) {
+      print('[SESSION] Failed to initialize session manager: $e');
+      rethrow;
+    }
+  }
+
+  /// Load session data from storage
+  static Future<void> _loadSessionData() async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+
+      // Load current session if exists
+      final encryptedSession = sessionBox.get(_currentSessionKey) as String?;
+      if (encryptedSession != null) {
+        final sessionData = EncryptionService.decryptUserData(encryptedSession);
+        await _restoreSession(sessionData);
+      }
+
+      print('[SESSION] Session data loaded successfully');
+    } catch (e) {
+      print('[SESSION] Failed to load session data: $e');
+    }
+  }
+
+  /// Restore session from saved data
+  static Future<void> _restoreSession(Map<String, dynamic> sessionData) async {
+    try {
+      final userId = sessionData['userId'] as String?;
+      final lastActivity = sessionData['lastActivity'] as String?;
+
+      if (userId == null || lastActivity == null) {
+        print('[SESSION] Invalid session data');
+        return;
+      }
+
+      // Check if session is still valid
+      final lastActivityTime = DateTime.parse(lastActivity);
+      final now = DateTime.now();
+
+      if (now.difference(lastActivityTime) > _sessionTimeout) {
+        print('[SESSION] Session expired');
+        await clearSession();
+        return;
+      }
+
+      // Check if Firebase user matches session
+      final firebaseUser = FirebaseService.currentUser;
+      if (firebaseUser == null || firebaseUser.uid != userId) {
+        print('[SESSION] Firebase user mismatch');
+        await clearSession();
+        return;
+      }
+
+      // Restore user data to AccessControlManager
+      final usersBox = Hive.box<User>('users');
+      final localUser = usersBox.get(userId);
+
+      if (localUser != null) {
+        final role = localUser.role == 'admin' ? user_role.UserRole.admin :
+                    localUser.role == 'teacher' ? user_role.UserRole.teacher :
+                    localUser.role == 'student' ? user_role.UserRole.student :
+                    user_role.UserRole.staff;
+
+        final accessUser = user_role.User(
+          id: localUser.id,
+          email: localUser.email,
+          displayName: localUser.displayName ?? '',
+          role: role,
+          permissions: user_role.User.getDefaultPermissions(role),
+          createdAt: localUser.createdAt,
+          lastLoginAt: localUser.lastLoginAt,
+        );
+
+        user_role.AccessControlManager.setCurrentUser(accessUser);
+        _lastActivity = lastActivityTime;
+
+        print('[SESSION] Session restored successfully for user: $userId');
+      } else {
+        print('[SESSION] Local user data not found for session restoration');
+        await clearSession();
+      }
+    } catch (e) {
+      print('[SESSION] Failed to restore session: $e');
+      await clearSession();
+    }
+  }
+
+  /// Save current session
+  static Future<void> saveSession() async {
+    try {
+      final currentUser = user_role.AccessControlManager.getCurrentUser();
+      final firebaseUser = FirebaseService.currentUser;
+
+      if (currentUser == null || firebaseUser == null) {
+        print('[SESSION] No user to save session for');
+        return;
+      }
+
+      final sessionData = {
+        'userId': currentUser.id,
+        'email': currentUser.email,
+        'displayName': currentUser.displayName,
+        'role': currentUser.role.toString(),
+        'firebaseUserId': firebaseUser.uid,
+        'lastActivity': (_lastActivity ?? DateTime.now()).toIso8601String(),
+        'sessionStart': DateTime.now().toIso8601String(),
+        'deviceId': await _getDeviceId(),
+      };
+
+      final encryptedSession = EncryptionService.encryptUserData(sessionData);
+
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      await sessionBox.put(_currentSessionKey, encryptedSession);
+
+      // Add to session history
+      await _addToSessionHistory(sessionData);
+
+      print('[SESSION] Session saved successfully');
+    } catch (e) {
+      print('[SESSION] Failed to save session: $e');
+    }
+  }
+
+  /// Clear current session
+  static Future<void> clearSession() async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      await sessionBox.delete(_currentSessionKey);
+
+      user_role.AccessControlManager.setCurrentUser(null);
+      _lastActivity = null;
+
+      print('[SESSION] Session cleared successfully');
+    } catch (e) {
+      print('[SESSION] Failed to clear session: $e');
+    }
+  }
+
+  /// Add session to history
+  static Future<void> _addToSessionHistory(Map<String, dynamic> sessionData) async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      List<dynamic> history = sessionBox.get(_sessionHistoryKey, defaultValue: <Map<String, dynamic>>[]);
+
+      if (history is List) {
+        // Add current session to history
+        history.add({
+          ...sessionData,
+          'endTime': DateTime.now().toIso8601String(),
+        });
+
+        // Keep only the most recent sessions
+        if (history.length > _maxSessionHistory) {
+          history = history.sublist(history.length - _maxSessionHistory);
+        }
+
+        await sessionBox.put(_sessionHistoryKey, history);
+      }
+    } catch (e) {
+      print('[SESSION] Failed to add session to history: $e');
+    }
+  }
+
+  /// Get session history
+  static Future<List<Map<String, dynamic>>> getSessionHistory() async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      final history = sessionBox.get(_sessionHistoryKey, defaultValue: <Map<String, dynamic>>[]);
+      return List<Map<String, dynamic>>.from(history);
+    } catch (e) {
+      print('[SESSION] Failed to get session history: $e');
+      return [];
+    }
+  }
+
+  /// Setup activity monitoring
+  static void _setupActivityMonitoring() {
+    _activityTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkSessionTimeout();
+    });
+  }
+
+  /// Start session timeout timer
+  static void _startSessionTimer() {
+    _sessionTimer = Timer.periodic(_sessionTimeout, (timer) {
+      print('[SESSION] Session timeout check triggered');
+      _checkSessionTimeout();
+    });
+  }
+
+  /// Check for session timeout
+  static void _checkSessionTimeout() {
+    if (_lastActivity == null) return;
+
+    final now = DateTime.now();
+    final timeSinceLastActivity = now.difference(_lastActivity!);
+
+    if (timeSinceLastActivity > _sessionTimeout) {
+      print('[SESSION] Session timed out due to inactivity');
+      clearSession();
+    }
+  }
+
+  /// Update user activity
+  static Future<void> updateActivity() async {
+    _lastActivity = DateTime.now();
+    await FirebaseService.updateUserActivity();
+
+    // Auto-save session on activity
+    if (user_role.AccessControlManager.getCurrentUser() != null) {
+      await saveSession();
+    }
+  }
+
+  /// Get device ID
+  static Future<String> _getDeviceId() async {
+    try {
+      // This would typically use device_info_plus
+      // For now, generate a simple device identifier
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      return 'device_${timestamp.substring(timestamp.length - 8)}';
+    } catch (e) {
+      return 'unknown_device';
+    }
+  }
+
+  /// Enable/disable auto-login
+  static Future<void> setAutoLoginEnabled(bool enabled) async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      await sessionBox.put(_autoLoginKey, enabled);
+      print('[SESSION] Auto-login ${enabled ? 'enabled' : 'disabled'}');
+    } catch (e) {
+      print('[SESSION] Failed to set auto-login: $e');
+    }
+  }
+
+  /// Check if auto-login is enabled
+  static Future<bool> isAutoLoginEnabled() async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      return sessionBox.get(_autoLoginKey, defaultValue: false);
+    } catch (e) {
+      print('[SESSION] Failed to check auto-login: $e');
+      return false;
+    }
+  }
+
+  /// Enable/disable biometric authentication
+  static Future<void> setBiometricEnabled(bool enabled) async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      await sessionBox.put(_biometricKey, enabled);
+      print('[SESSION] Biometric authentication ${enabled ? 'enabled' : 'disabled'}');
+    } catch (e) {
+      print('[SESSION] Failed to set biometric: $e');
+    }
+  }
+
+  /// Check if biometric authentication is enabled
+  static Future<bool> isBiometricEnabled() async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      return sessionBox.get(_biometricKey, defaultValue: false);
+    } catch (e) {
+      print('[SESSION] Failed to check biometric: $e');
+      return false;
+    }
+  }
+
+  /// Get session status
+  static Future<Map<String, dynamic>> getSessionStatus() async {
+    final currentUser = user_role.AccessControlManager.getCurrentUser();
+
+    return {
+      'isActive': currentUser != null,
+      'userId': currentUser?.id,
+      'userRole': currentUser?.role.toString(),
+      'lastActivity': _lastActivity?.toIso8601String(),
+      'sessionTimeout': _sessionTimeout.inHours,
+      'autoLoginEnabled': await isAutoLoginEnabled(),
+      'biometricEnabled': await isBiometricEnabled(),
+      'firebaseAuthenticated': FirebaseService.isAuthenticated,
+      'sessionValid': FirebaseService.isSessionValid(),
+    };
+  }
+
+  /// Force session refresh
+  static Future<void> refreshSession() async {
+    if (user_role.AccessControlManager.getCurrentUser() != null) {
+      await saveSession();
+      await AuthMiddleware.refreshAuthState();
+      print('[SESSION] Session refreshed');
+    }
+  }
+
+  /// Handle app lifecycle changes
+  static Future<void> handleAppLifecycleChange(AppLifecycleState state) async {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        await updateActivity();
+        print('[SESSION] App resumed - activity updated');
+        break;
+      case AppLifecycleState.paused:
+        await saveSession();
+        print('[SESSION] App paused - session saved');
+        break;
+      case AppLifecycleState.detached:
+        await saveSession();
+        print('[SESSION] App detached - session saved');
+        break;
+      default:
+        break;
+    }
+  }
+
+  /// Clean up old session data
+  static Future<void> cleanupOldSessions({Duration maxAge = const Duration(days: 30)}) async {
+    try {
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      final history = sessionBox.get(_sessionHistoryKey, defaultValue: <Map<String, dynamic>>[]);
+
+      if (history is List) {
+        final cutoffDate = DateTime.now().subtract(maxAge);
+        final filteredHistory = history.where((session) {
+          if (session is Map<String, dynamic>) {
+            final endTime = session['endTime'];
+            if (endTime != null) {
+              try {
+                final sessionEnd = DateTime.parse(endTime);
+                return sessionEnd.isAfter(cutoffDate);
+              } catch (e) {
+                return false;
+              }
+            }
+          }
+          return false;
+        }).toList();
+
+        await sessionBox.put(_sessionHistoryKey, filteredHistory);
+        print('[SESSION] Cleaned up ${history.length - filteredHistory.length} old sessions');
+      }
+    } catch (e) {
+      print('[SESSION] Failed to cleanup old sessions: $e');
+    }
+  }
+
+  /// Handle logout
+  static Future<void> handleLogout() async {
+    await clearSession();
+    await AuthMiddleware.handleLogout();
+    print('[SESSION] Logout handled successfully');
+  }
+
+  /// Check if session can be restored
+  static Future<bool> canRestoreSession() async {
+    try {
+      if (!await isAutoLoginEnabled()) {
+        return false;
+      }
+
+      final sessionBox = await Hive.openBox(_sessionBoxName);
+      final encryptedSession = sessionBox.get(_currentSessionKey) as String?;
+
+      if (encryptedSession == null) {
+        return false;
+      }
+
+      final sessionData = EncryptionService.decryptUserData(encryptedSession);
+      final lastActivity = sessionData['lastActivity'] as String?;
+
+      if (lastActivity == null) {
+        return false;
+      }
+
+      final lastActivityTime = DateTime.parse(lastActivity);
+      final now = DateTime.now();
+
+      return now.difference(lastActivityTime) <= _sessionTimeout;
+    } catch (e) {
+      print('[SESSION] Failed to check session restoration: $e');
+      return false;
+    }
+  }
+
+  /// Dispose session manager
+  static void dispose() {
+    _sessionTimer?.cancel();
+    _activityTimer?.cancel();
+    print('[SESSION] Session manager disposed');
+  }
+}

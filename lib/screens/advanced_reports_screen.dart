@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../models.dart';
-import '../services/advanced_pdf_service.dart';
-import '../utils/ranking_service.dart';
+import 'package:smart_school_assistant/models.dart';
+import 'package:smart_school_assistant/services/advanced_pdf_service.dart';
+import 'package:smart_school_assistant/utils/ranking_service.dart';
 
 class AdvancedReportsScreen extends StatefulWidget {
   const AdvancedReportsScreen({super.key});
@@ -87,7 +87,7 @@ class _AdvancedReportsScreenState extends State<AdvancedReportsScreen> {
         onProgress: (current, total) {
           setState(() {
             _progress = current / total;
-            _currentTask = 'Generating report ${current} of ${total}...';
+            _currentTask = 'Generating report $current of $total...';
           });
         },
       );

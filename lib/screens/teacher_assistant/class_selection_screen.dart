@@ -4,6 +4,7 @@ import 'package:smart_school_assistant/l10n/app_localizations.dart';
 import 'package:smart_school_assistant/main.dart';
 import 'package:smart_school_assistant/models.dart';
 import 'student_roster_screen.dart';
+import '../class_assignment_screen.dart';
 
 class ClassSelectionScreen extends StatelessWidget {
   const ClassSelectionScreen({super.key});
@@ -66,6 +67,18 @@ class ClassSelectionScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.selectAClass),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.group_add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ClassAssignmentScreen(),
+                ),
+              );
+            },
+            tooltip: 'Assign Students to Classes',
+          ),
           PopupMenuButton<Locale>(
             onSelected: (Locale locale) {
               appKey.currentState?.setLocale(locale);

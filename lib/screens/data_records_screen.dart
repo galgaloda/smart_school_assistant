@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:smart_school_assistant/models.dart';
 import 'package:smart_school_assistant/services/backup_service.dart';
-import 'package:file_picker/file_picker.dart';
 
 class DataRecordsScreen extends StatefulWidget {
   const DataRecordsScreen({super.key});

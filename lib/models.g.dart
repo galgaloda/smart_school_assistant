@@ -6,6 +6,82 @@ part of 'models.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
+class UserAdapter extends TypeAdapter<User> {
+  @override
+  final int typeId = 13;
+
+  @override
+  User read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return User(
+      id: fields[0] as String,
+      email: fields[1] as String,
+      displayName: fields[2] as String?,
+      photoUrl: fields[3] as String?,
+      role: fields[4] as String,
+      createdAt: fields[5] as DateTime,
+      lastLoginAt: fields[6] as DateTime,
+      isActive: fields[7] as bool,
+      schoolName: fields[8] as String?,
+      schoolAddress: fields[9] as String?,
+      schoolPhone: fields[10] as String?,
+      isSynced: fields[11] as bool,
+      lastUpdated: fields[12] as DateTime?,
+      userId: fields[13] as String?,
+      syncId: fields[14] as String?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, User obj) {
+    writer
+      ..writeByte(15)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.email)
+      ..writeByte(2)
+      ..write(obj.displayName)
+      ..writeByte(3)
+      ..write(obj.photoUrl)
+      ..writeByte(4)
+      ..write(obj.role)
+      ..writeByte(5)
+      ..write(obj.createdAt)
+      ..writeByte(6)
+      ..write(obj.lastLoginAt)
+      ..writeByte(7)
+      ..write(obj.isActive)
+      ..writeByte(8)
+      ..write(obj.schoolName)
+      ..writeByte(9)
+      ..write(obj.schoolAddress)
+      ..writeByte(10)
+      ..write(obj.schoolPhone)
+      ..writeByte(11)
+      ..write(obj.isSynced)
+      ..writeByte(12)
+      ..write(obj.lastUpdated)
+      ..writeByte(13)
+      ..write(obj.userId)
+      ..writeByte(14)
+      ..write(obj.syncId);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 class StudentAdapter extends TypeAdapter<Student> {
   @override
   final int typeId = 0;
@@ -35,13 +111,17 @@ class StudentAdapter extends TypeAdapter<Student> {
       medicalConditions: fields[15] as String?,
       nationality: fields[16] as String?,
       religion: fields[17] as String?,
+      isSynced: fields[18] as bool,
+      lastUpdated: fields[19] as DateTime?,
+      userId: fields[20] as String?,
+      syncId: fields[21] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Student obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -77,7 +157,15 @@ class StudentAdapter extends TypeAdapter<Student> {
       ..writeByte(16)
       ..write(obj.nationality)
       ..writeByte(17)
-      ..write(obj.religion);
+      ..write(obj.religion)
+      ..writeByte(18)
+      ..write(obj.isSynced)
+      ..writeByte(19)
+      ..write(obj.lastUpdated)
+      ..writeByte(20)
+      ..write(obj.userId)
+      ..writeByte(21)
+      ..write(obj.syncId);
   }
 
   @override
@@ -104,17 +192,29 @@ class TeacherAdapter extends TypeAdapter<Teacher> {
     return Teacher(
       id: fields[0] as String,
       fullName: fields[1] as String,
+      isSynced: fields[2] as bool,
+      lastUpdated: fields[3] as DateTime?,
+      userId: fields[4] as String?,
+      syncId: fields[5] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Teacher obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.fullName);
+      ..write(obj.fullName)
+      ..writeByte(2)
+      ..write(obj.isSynced)
+      ..writeByte(3)
+      ..write(obj.lastUpdated)
+      ..writeByte(4)
+      ..write(obj.userId)
+      ..writeByte(5)
+      ..write(obj.syncId);
   }
 
   @override
@@ -142,19 +242,31 @@ class SubjectAdapter extends TypeAdapter<Subject> {
       id: fields[0] as String,
       name: fields[1] as String,
       teacherId: fields[2] as String,
+      isSynced: fields[3] as bool,
+      lastUpdated: fields[4] as DateTime?,
+      userId: fields[5] as String?,
+      syncId: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Subject obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.teacherId);
+      ..write(obj.teacherId)
+      ..writeByte(3)
+      ..write(obj.isSynced)
+      ..writeByte(4)
+      ..write(obj.lastUpdated)
+      ..writeByte(5)
+      ..write(obj.userId)
+      ..writeByte(6)
+      ..write(obj.syncId);
   }
 
   @override
@@ -181,17 +293,29 @@ class ClassSectionAdapter extends TypeAdapter<ClassSection> {
     return ClassSection(
       id: fields[0] as String,
       name: fields[1] as String,
+      isSynced: fields[2] as bool,
+      lastUpdated: fields[3] as DateTime?,
+      userId: fields[4] as String?,
+      syncId: fields[5] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ClassSection obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.name);
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.isSynced)
+      ..writeByte(3)
+      ..write(obj.lastUpdated)
+      ..writeByte(4)
+      ..write(obj.userId)
+      ..writeByte(5)
+      ..write(obj.syncId);
   }
 
   @override
@@ -221,13 +345,17 @@ class ScoreAdapter extends TypeAdapter<Score> {
       assessmentType: fields[2] as String,
       marks: fields[3] as double,
       date: fields[4] as DateTime,
+      isSynced: fields[5] as bool,
+      lastUpdated: fields[6] as DateTime?,
+      userId: fields[7] as String?,
+      syncId: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Score obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.studentId)
       ..writeByte(1)
@@ -237,7 +365,15 @@ class ScoreAdapter extends TypeAdapter<Score> {
       ..writeByte(3)
       ..write(obj.marks)
       ..writeByte(4)
-      ..write(obj.date);
+      ..write(obj.date)
+      ..writeByte(5)
+      ..write(obj.isSynced)
+      ..writeByte(6)
+      ..write(obj.lastUpdated)
+      ..writeByte(7)
+      ..write(obj.userId)
+      ..writeByte(8)
+      ..write(obj.syncId);
   }
 
   @override
@@ -265,19 +401,31 @@ class AttendanceRecordAdapter extends TypeAdapter<AttendanceRecord> {
       studentId: fields[0] as String,
       date: fields[1] as DateTime,
       status: fields[2] as String,
+      isSynced: fields[3] as bool,
+      lastUpdated: fields[4] as DateTime?,
+      userId: fields[5] as String?,
+      syncId: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AttendanceRecord obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.studentId)
       ..writeByte(1)
       ..write(obj.date)
       ..writeByte(2)
-      ..write(obj.status);
+      ..write(obj.status)
+      ..writeByte(3)
+      ..write(obj.isSynced)
+      ..writeByte(4)
+      ..write(obj.lastUpdated)
+      ..writeByte(5)
+      ..write(obj.userId)
+      ..writeByte(6)
+      ..write(obj.syncId);
   }
 
   @override
@@ -306,13 +454,17 @@ class TimeTableEntryAdapter extends TypeAdapter<TimeTableEntry> {
       period: fields[1] as String,
       subjectId: fields[2] as String,
       classSectionId: fields[3] as String,
+      isSynced: fields[4] as bool,
+      lastUpdated: fields[5] as DateTime?,
+      userId: fields[6] as String?,
+      syncId: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TimeTableEntry obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.dayOfWeek)
       ..writeByte(1)
@@ -320,7 +472,15 @@ class TimeTableEntryAdapter extends TypeAdapter<TimeTableEntry> {
       ..writeByte(2)
       ..write(obj.subjectId)
       ..writeByte(3)
-      ..write(obj.classSectionId);
+      ..write(obj.classSectionId)
+      ..writeByte(4)
+      ..write(obj.isSynced)
+      ..writeByte(5)
+      ..write(obj.lastUpdated)
+      ..writeByte(6)
+      ..write(obj.userId)
+      ..writeByte(7)
+      ..write(obj.syncId);
   }
 
   @override
@@ -349,13 +509,17 @@ class PeriodAdapter extends TypeAdapter<Period> {
       name: fields[1] as String,
       time: fields[2] as String,
       isBreak: fields[3] as bool,
+      isSynced: fields[4] as bool,
+      lastUpdated: fields[5] as DateTime?,
+      userId: fields[6] as String?,
+      syncId: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Period obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -363,7 +527,15 @@ class PeriodAdapter extends TypeAdapter<Period> {
       ..writeByte(2)
       ..write(obj.time)
       ..writeByte(3)
-      ..write(obj.isBreak);
+      ..write(obj.isBreak)
+      ..writeByte(4)
+      ..write(obj.isSynced)
+      ..writeByte(5)
+      ..write(obj.lastUpdated)
+      ..writeByte(6)
+      ..write(obj.userId)
+      ..writeByte(7)
+      ..write(obj.syncId);
   }
 
   @override
@@ -395,13 +567,17 @@ class InventoryItemAdapter extends TypeAdapter<InventoryItem> {
       condition: fields[4] as String,
       description: fields[5] as String,
       dateAdded: fields[6] as DateTime,
+      isSynced: fields[7] as bool,
+      lastUpdated: fields[8] as DateTime?,
+      userId: fields[9] as String?,
+      syncId: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, InventoryItem obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -415,7 +591,15 @@ class InventoryItemAdapter extends TypeAdapter<InventoryItem> {
       ..writeByte(5)
       ..write(obj.description)
       ..writeByte(6)
-      ..write(obj.dateAdded);
+      ..write(obj.dateAdded)
+      ..writeByte(7)
+      ..write(obj.isSynced)
+      ..writeByte(8)
+      ..write(obj.lastUpdated)
+      ..writeByte(9)
+      ..write(obj.userId)
+      ..writeByte(10)
+      ..write(obj.syncId);
   }
 
   @override
@@ -450,13 +634,17 @@ class DataRecordAdapter extends TypeAdapter<DataRecord> {
       dateCreated: fields[7] as DateTime,
       lastModified: fields[8] as DateTime?,
       createdBy: fields[9] as String,
+      isSynced: fields[10] as bool,
+      lastUpdated: fields[11] as DateTime?,
+      userId: fields[12] as String?,
+      syncId: fields[13] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DataRecord obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -476,7 +664,15 @@ class DataRecordAdapter extends TypeAdapter<DataRecord> {
       ..writeByte(8)
       ..write(obj.lastModified)
       ..writeByte(9)
-      ..write(obj.createdBy);
+      ..write(obj.createdBy)
+      ..writeByte(10)
+      ..write(obj.isSynced)
+      ..writeByte(11)
+      ..write(obj.lastUpdated)
+      ..writeByte(12)
+      ..write(obj.userId)
+      ..writeByte(13)
+      ..write(obj.syncId);
   }
 
   @override
@@ -510,13 +706,17 @@ class AssessmentAdapter extends TypeAdapter<Assessment> {
       maxMarks: fields[6] as double,
       dueDate: fields[7] as DateTime,
       description: fields[8] as String,
+      isSynced: fields[9] as bool,
+      lastUpdated: fields[10] as DateTime?,
+      userId: fields[11] as String?,
+      syncId: fields[12] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Assessment obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -534,7 +734,15 @@ class AssessmentAdapter extends TypeAdapter<Assessment> {
       ..writeByte(7)
       ..write(obj.dueDate)
       ..writeByte(8)
-      ..write(obj.description);
+      ..write(obj.description)
+      ..writeByte(9)
+      ..write(obj.isSynced)
+      ..writeByte(10)
+      ..write(obj.lastUpdated)
+      ..writeByte(11)
+      ..write(obj.userId)
+      ..writeByte(12)
+      ..write(obj.syncId);
   }
 
   @override
@@ -565,13 +773,17 @@ class SemesterAdapter extends TypeAdapter<Semester> {
       startDate: fields[3] as DateTime,
       endDate: fields[4] as DateTime,
       isActive: fields[5] as bool,
+      isSynced: fields[6] as bool,
+      lastUpdated: fields[7] as DateTime?,
+      userId: fields[8] as String?,
+      syncId: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Semester obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -583,7 +795,15 @@ class SemesterAdapter extends TypeAdapter<Semester> {
       ..writeByte(4)
       ..write(obj.endDate)
       ..writeByte(5)
-      ..write(obj.isActive);
+      ..write(obj.isActive)
+      ..writeByte(6)
+      ..write(obj.isSynced)
+      ..writeByte(7)
+      ..write(obj.lastUpdated)
+      ..writeByte(8)
+      ..write(obj.userId)
+      ..writeByte(9)
+      ..write(obj.syncId);
   }
 
   @override
@@ -614,13 +834,17 @@ class AssessmentScoreAdapter extends TypeAdapter<AssessmentScore> {
       marksObtained: fields[3] as double,
       dateRecorded: fields[4] as DateTime,
       recordedBy: fields[5] as String,
+      isSynced: fields[6] as bool,
+      lastUpdated: fields[7] as DateTime?,
+      userId: fields[8] as String?,
+      syncId: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AssessmentScore obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -632,7 +856,15 @@ class AssessmentScoreAdapter extends TypeAdapter<AssessmentScore> {
       ..writeByte(4)
       ..write(obj.dateRecorded)
       ..writeByte(5)
-      ..write(obj.recordedBy);
+      ..write(obj.recordedBy)
+      ..writeByte(6)
+      ..write(obj.isSynced)
+      ..writeByte(7)
+      ..write(obj.lastUpdated)
+      ..writeByte(8)
+      ..write(obj.userId)
+      ..writeByte(9)
+      ..write(obj.syncId);
   }
 
   @override

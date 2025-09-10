@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models.dart';
-import '../utils/ranking_service.dart';
 
 class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
@@ -98,8 +97,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             .reduce((a, b) => a + b) / studentScores.length;
 
         String grade;
-        if (average >= 90) grade = 'A';
-        else if (average >= 80) grade = 'B';
+        if (average >= 90) {
+          grade = 'A';
+        } else if (average >= 80) grade = 'B';
         else if (average >= 70) grade = 'C';
         else if (average >= 60) grade = 'D';
         else grade = 'F';
@@ -194,7 +194,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         color: Colors.green,
         barWidth: 3,
         belowBarData: BarAreaData(show: false),
-        dotData: FlDotData(show: true),
+        dotData: const FlDotData(show: true),
       ),
     ];
   }
@@ -429,7 +429,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                       },
                     ),
                   ),
-                  leftTitles: AxisTitles(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: true),
                   ),
                 ),
@@ -462,12 +462,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                       },
                     ),
                   ),
-                  leftTitles: AxisTitles(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: true),
                   ),
                 ),
                 borderData: FlBorderData(show: true),
-                gridData: FlGridData(show: true),
+                gridData: const FlGridData(show: true),
               ),
             ),
           ),

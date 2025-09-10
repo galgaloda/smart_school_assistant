@@ -1,7 +1,7 @@
 name: smart_school_assistant
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -38,6 +38,29 @@ dependencies:
   collection: ^1.18.0
   shared_preferences: ^2.2.3
 
+  # Encryption
+  encrypt: ^5.0.3
+
+  # Biometric Authentication
+  local_auth: ^2.1.6
+
+  # Firebase (Authentication & Cloud Database)
+  firebase_core: ^3.3.0
+  firebase_auth: ^5.1.0
+  cloud_firestore: ^5.2.0
+  firebase_storage: ^12.1.0
+
+  # Background Tasks - Temporarily disabled for Firebase setup
+  # workmanager: ^0.5.2
+
+  # Connectivity
+  connectivity_plus: ^6.0.3
+
+  # Notifications
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+  permission_handler: ^11.3.1
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
@@ -53,3 +76,7 @@ flutter:
 
 flutter_intl:
   enabled: true
+
+# Windows-specific configuration
+windows:
+  main: lib/main_windows.dart

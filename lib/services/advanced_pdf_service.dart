@@ -205,12 +205,12 @@ class AdvancedPdfService {
                 if (schoolAddress.isNotEmpty)
                   pw.Text(
                     schoolAddress,
-                    style: pw.TextStyle(fontSize: 12, color: PdfColors.white),
+                    style: const pw.TextStyle(fontSize: 12, color: PdfColors.white),
                   ),
                 if (schoolPhone.isNotEmpty)
                   pw.Text(
                     'Phone: $schoolPhone',
-                    style: pw.TextStyle(fontSize: 12, color: PdfColors.white),
+                    style: const pw.TextStyle(fontSize: 12, color: PdfColors.white),
                   ),
                 pw.SizedBox(height: 10),
                 pw.Text(
@@ -276,7 +276,7 @@ class AdvancedPdfService {
                 : pw.Center(
                     child: pw.Text(
                       'No Photo',
-                      style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey),
                     ),
                   ),
           ),
@@ -458,7 +458,7 @@ class AdvancedPdfService {
           // Photo section
           pw.Container(
             width: 150,
-            decoration: pw.BoxDecoration(
+            decoration: const pw.BoxDecoration(
               color: primaryColor,
               borderRadius: pw.BorderRadius.only(
                 topLeft: pw.Radius.circular(13),
@@ -480,7 +480,7 @@ class AdvancedPdfService {
                       : pw.Center(
                           child: pw.Text(
                             'Photo',
-                            style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                            style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey),
                           ),
                         ),
                 ),
@@ -536,7 +536,7 @@ class AdvancedPdfService {
                   if (schoolPhone.isNotEmpty)
                     pw.Text(
                       'Contact: $schoolPhone',
-                      style: pw.TextStyle(fontSize: 8, color: PdfColors.grey),
+                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey),
                     ),
                 ],
               ),
@@ -572,7 +572,7 @@ class AdvancedPdfService {
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Text(
         '$label $value',
-        style: pw.TextStyle(fontSize: 10),
+        style: const pw.TextStyle(fontSize: 10),
       ),
     );
   }
@@ -659,7 +659,7 @@ class AdvancedPdfService {
           pw.SizedBox(height: 2),
           pw.Text(
             label,
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               color: PdfColors.white,
               fontSize: 8,
             ),
@@ -723,7 +723,7 @@ class AdvancedPdfService {
         children: [
           pw.Text(
             'Generated on: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               color: PdfColors.white,
               fontSize: 8,
             ),
@@ -762,7 +762,7 @@ class AdvancedPdfService {
           pw.SizedBox(height: 10),
           pw.Text(
             schoolName,
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 18,
               color: PdfColors.white,
             ),
@@ -770,14 +770,14 @@ class AdvancedPdfService {
           pw.SizedBox(height: 5),
           pw.Text(
             'Class: ${classSection.name}',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 14,
               color: PdfColors.white,
             ),
           ),
           pw.Text(
             'Academic Year: $academicYear',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 14,
               color: PdfColors.white,
             ),
@@ -879,7 +879,7 @@ class AdvancedPdfService {
           pw.SizedBox(height: 10),
           pw.Text(
             'Detailed subject analysis would be included here...',
-            style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+            style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey),
           ),
         ],
       ),
@@ -913,7 +913,7 @@ class AdvancedPdfService {
               padding: const pw.EdgeInsets.symmetric(vertical: 2),
               child: pw.Text(
                 '${rank.rank}. ${rank.student.fullName} - ${rank.average.toStringAsFixed(1)}%',
-                style: pw.TextStyle(fontSize: 12),
+                style: const pw.TextStyle(fontSize: 12),
               ),
             )
           ),

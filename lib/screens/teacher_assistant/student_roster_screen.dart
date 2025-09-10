@@ -4,10 +4,12 @@ import 'package:smart_school_assistant/l10n/app_localizations.dart';
 import 'package:smart_school_assistant/models.dart';
 import 'package:smart_school_assistant/utils/ranking_service.dart';
 import 'package:smart_school_assistant/utils/transliteration_utils.dart';
-import 'attendance_tracker_screen.dart';
-import 'score_entry_screen.dart';
-import 'student_report_screen.dart';
-import '../photo_upload_screen.dart';
+import 'package:smart_school_assistant/screens/teacher_assistant/attendance_tracker_screen.dart';
+import 'package:smart_school_assistant/screens/teacher_assistant/score_entry_screen.dart';
+import 'package:smart_school_assistant/screens/teacher_assistant/student_report_screen.dart';
+import 'package:smart_school_assistant/screens/photo_upload_screen.dart';
+import 'package:smart_school_assistant/screens/class_assignment_screen.dart';
+import 'package:smart_school_assistant/screens/data_records_screen.dart';
 import 'dart:io';
 
 class StudentRosterScreen extends StatelessWidget {
@@ -73,6 +75,39 @@ class StudentRosterScreen extends StatelessWidget {
                     gender: 'Not Specified',
                   );
                   studentsBox.add(newStudent);
+
+                  // Automatically create a data record for the new student
+                  final recordsBox = Hive.box<DataRecord>('data_records');
+                  final studentRecord = DataRecord(
+                    id: 'student_${newStudent.id}_${DateTime.now().millisecondsSinceEpoch}',
+                    title: 'Student Registration: ${newStudent.fullName}',
+                    category: 'Student Records',
+                    content: '''
+Student Registration Details:
+
+Name: ${newStudent.fullName}
+Class: ${classSection.name}
+Student ID: ${newStudent.id}
+Date of Birth: ${newStudent.dateOfBirth.toString().split(' ')[0] ?? 'Not specified'}
+Gender: ${newStudent.gender}
+Registration Date: ${DateTime.now().toString().split(' ')[0]}
+
+Note: Student added to ${classSection.name} class through Teacher Assistant.
+                    ''',
+                    priority: 'Medium',
+                    status: 'Active',
+                    dateCreated: DateTime.now(),
+                    createdBy: 'Teacher Assistant',
+                  );
+                  recordsBox.add(studentRecord);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Student "${newStudent.fullName}" added to ${classSection.name} successfully! Record created.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+
                   Navigator.of(context).pop();
                 }
               },
@@ -133,6 +168,30 @@ class StudentRosterScreen extends StatelessWidget {
                       );
                     },
                     tooltip: AppLocalizations.of(context)!.enterScores,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.group_add),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClassAssignmentScreen(targetClassId: classSection.id),
+                        ),
+                      );
+                    },
+                    tooltip: 'Assign Students to Class',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.folder),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DataRecordsScreen(),
+                        ),
+                      );
+                    },
+                    tooltip: 'View Data Records',
                   ),
                 ],
               ),

@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -126,7 +125,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         if (row.length >= 6) {
           try {
             final item = InventoryItem(
-              id: DateTime.now().millisecondsSinceEpoch.toString() + '_$i',
+              id: '${DateTime.now().millisecondsSinceEpoch}_$i',
               name: row[0]?.value?.toString() ?? '',
               quantity: int.tryParse(row[1]?.value?.toString() ?? '0') ?? 0,
               type: row[2]?.value?.toString() ?? 'Other',

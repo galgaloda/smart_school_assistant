@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../models.dart';
+import 'data_records_screen.dart';
 
 class StudentRegistrationScreen extends StatefulWidget {
   const StudentRegistrationScreen({super.key});
@@ -129,9 +130,43 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
 
       await studentsBox.add(newStudent);
 
+      // Automatically create a data record for the new student
+      final recordsBox = Hive.box<DataRecord>('data_records');
+      final studentRecord = DataRecord(
+        id: 'student_${newStudent.id}_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Student Registration: ${newStudent.fullName}',
+        category: 'Student Records',
+        content: '''
+Student Registration Details:
+
+Name: ${newStudent.fullName}
+Student ID: ${newStudent.studentId ?? newStudent.id}
+Grade: ${newStudent.grade ?? 'Not specified'}
+Date of Birth: ${newStudent.dateOfBirth.toString().split(' ')[0] ?? 'Not specified'}
+Gender: ${newStudent.gender}
+Phone: ${newStudent.phoneNumber ?? 'Not provided'}
+Address: ${newStudent.address ?? 'Not provided'}
+Emergency Contact: ${newStudent.emergencyContactName ?? 'Not provided'}
+Emergency Phone: ${newStudent.emergencyContactPhone ?? 'Not provided'}
+Email: ${newStudent.email ?? 'Not provided'}
+Registration Date: ${newStudent.enrollmentDate?.toString().split(' ')[0] ?? DateTime.now().toString().split(' ')[0]}
+
+Additional Information:
+Blood Type: ${newStudent.bloodType ?? 'Not specified'}
+Medical Conditions: ${newStudent.medicalConditions ?? 'None specified'}
+Nationality: ${newStudent.nationality ?? 'Not specified'}
+Religion: ${newStudent.religion ?? 'Not specified'}
+        ''',
+        priority: 'Medium',
+        status: 'Active',
+        dateCreated: DateTime.now(),
+        createdBy: 'System',
+      );
+      await recordsBox.add(studentRecord);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Student "${newStudent.fullName}" registered successfully!'),
+          content: Text('Student "${newStudent.fullName}" registered successfully! Record created.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -175,215 +210,317 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Student Registration'),
+        title: const Text('Register New Student'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.photo_camera),
+            onPressed: () {
+              // TODO: Navigate to photo upload
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Photo upload coming soon!')),
+              );
+            },
+            tooltip: 'Add Student Photo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DataRecordsScreen(),
+                ),
+              );
+            },
+            tooltip: 'View Data Records',
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Basic Information Section
-              _buildSectionHeader('Basic Information'),
-              _buildTextField(
-                controller: _fullNameController,
-                label: 'Full Name *',
-                icon: Icons.person,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter student full name';
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _studentIdController,
-                label: 'Student ID',
-                icon: Icons.badge,
-                hint: 'Leave empty to auto-generate',
-              ),
-
-              // Date and Gender Section
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDatePickerField(
-                      label: 'Date of Birth *',
-                      selectedDate: _selectedDateOfBirth,
-                      onTap: () => _selectDateOfBirth(context),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildDropdownField(
-                      label: 'Gender *',
-                      value: _selectedGender,
-                      items: _genders,
-                      onChanged: (value) => setState(() => _selectedGender = value!),
-                      icon: Icons.people,
-                    ),
-                  ),
-                ],
-              ),
-
-              // Contact Information Section
-              _buildSectionHeader('Contact Information'),
-              _buildTextField(
-                controller: _phoneController,
-                label: 'Phone Number',
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
-              ),
-              _buildTextField(
-                controller: _emailController,
-                label: 'Email',
-                icon: Icons.email,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              _buildTextField(
-                controller: _addressController,
-                label: 'Address',
-                icon: Icons.home,
-                maxLines: 3,
-              ),
-
-              // Academic Information Section
-              _buildSectionHeader('Academic Information'),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDropdownField(
-                      label: 'Grade *',
-                      value: _selectedGrade,
-                      items: _grades,
-                      onChanged: (value) => setState(() => _selectedGrade = value!),
-                      icon: Icons.school,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildDatePickerField(
-                      label: 'Enrollment Date',
-                      selectedDate: _selectedEnrollmentDate,
-                      onTap: () => _selectEnrollmentDate(context),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Emergency Contact Section
-              _buildSectionHeader('Emergency Contact'),
-              _buildTextField(
-                controller: _emergencyContactNameController,
-                label: 'Emergency Contact Name',
-                icon: Icons.contact_emergency,
-              ),
-              _buildTextField(
-                controller: _emergencyContactPhoneController,
-                label: 'Emergency Contact Phone',
-                icon: Icons.phone_callback,
-                keyboardType: TextInputType.phone,
-              ),
-
-              // Medical Information Section
-              _buildSectionHeader('Medical Information'),
-              _buildTextField(
-                controller: _bloodTypeController,
-                label: 'Blood Type',
-                icon: Icons.bloodtype,
-                hint: 'e.g., A+, B-, O+',
-              ),
-              _buildTextField(
-                controller: _medicalConditionsController,
-                label: 'Medical Conditions',
-                icon: Icons.medical_information,
-                hint: 'Any allergies or medical conditions',
-                maxLines: 2,
-              ),
-
-              // Additional Information Section
-              _buildSectionHeader('Additional Information'),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _nationalityController,
-                      label: 'Nationality',
-                      icon: Icons.flag,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _religionController,
-                      label: 'Religion',
-                      icon: Icons.church,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _registerStudent,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Register Student'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.indigo, Colors.white],
+            stops: [0.0, 0.3],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Progress Indicator
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _clearForm,
-                      icon: const Icon(Icons.clear),
-                      label: const Text('Clear Form'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(fontSize: 16),
-                      ),
-                    ),
+                  child: Row(
+                    children: [
+                      _buildProgressStep('Basic Info', true),
+                      _buildProgressConnector(true),
+                      _buildProgressStep('Contact', false),
+                      _buildProgressConnector(false),
+                      _buildProgressStep('Academic', false),
+                      _buildProgressConnector(false),
+                      _buildProgressStep('Medical', false),
+                    ],
                   ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 16),
-              const Text(
-                '* Required fields',
-                style: TextStyle(color: Colors.red, fontSize: 12),
-              ),
-            ],
+                const SizedBox(height: 24),
+
+                // Basic Information Section
+                _buildSectionCard(
+                  title: '👤 Basic Information',
+                  subtitle: 'Student personal details',
+                  icon: Icons.person,
+                  children: [
+                    _buildTextField(
+                      controller: _fullNameController,
+                      label: 'Full Name *',
+                      icon: Icons.person,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter student full name';
+                        }
+                        return null;
+                      },
+                    ),
+                    _buildTextField(
+                      controller: _studentIdController,
+                      label: 'Student ID',
+                      icon: Icons.badge,
+                      hint: 'Leave empty to auto-generate',
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDatePickerField(
+                            label: 'Date of Birth *',
+                            selectedDate: _selectedDateOfBirth,
+                            onTap: () => _selectDateOfBirth(context),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildDropdownField(
+                            label: 'Gender *',
+                            value: _selectedGender,
+                            items: _genders,
+                            onChanged: (value) => setState(() => _selectedGender = value!),
+                            icon: Icons.people,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Contact Information Section
+                _buildSectionCard(
+                  title: '📞 Contact Information',
+                  subtitle: 'Phone, email, and address',
+                  icon: Icons.phone,
+                  children: [
+                    _buildTextField(
+                      controller: _phoneController,
+                      label: 'Phone Number',
+                      icon: Icons.phone,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    _buildTextField(
+                      controller: _emailController,
+                      label: 'Email',
+                      icon: Icons.email,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    _buildTextField(
+                      controller: _addressController,
+                      label: 'Address',
+                      icon: Icons.home,
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+
+                // Academic Information Section
+                _buildSectionCard(
+                  title: '🎓 Academic Information',
+                  subtitle: 'Grade and enrollment details',
+                  icon: Icons.school,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdownField(
+                            label: 'Grade *',
+                            value: _selectedGrade,
+                            items: _grades,
+                            onChanged: (value) => setState(() => _selectedGrade = value!),
+                            icon: Icons.school,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildDatePickerField(
+                            label: 'Enrollment Date',
+                            selectedDate: _selectedEnrollmentDate,
+                            onTap: () => _selectEnrollmentDate(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Emergency Contact Section
+                _buildSectionCard(
+                  title: '🚨 Emergency Contact',
+                  subtitle: 'Important contact information',
+                  icon: Icons.contact_emergency,
+                  children: [
+                    _buildTextField(
+                      controller: _emergencyContactNameController,
+                      label: 'Emergency Contact Name',
+                      icon: Icons.contact_emergency,
+                    ),
+                    _buildTextField(
+                      controller: _emergencyContactPhoneController,
+                      label: 'Emergency Contact Phone',
+                      icon: Icons.phone_callback,
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ],
+                ),
+
+                // Medical Information Section
+                _buildSectionCard(
+                  title: '🏥 Medical Information',
+                  subtitle: 'Health and medical details',
+                  icon: Icons.medical_information,
+                  children: [
+                    _buildTextField(
+                      controller: _bloodTypeController,
+                      label: 'Blood Type',
+                      icon: Icons.bloodtype,
+                      hint: 'e.g., A+, B-, O+',
+                    ),
+                    _buildTextField(
+                      controller: _medicalConditionsController,
+                      label: 'Medical Conditions',
+                      icon: Icons.medical_information,
+                      hint: 'Any allergies or medical conditions',
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+
+                // Additional Information Section
+                _buildSectionCard(
+                  title: '🌍 Additional Information',
+                  subtitle: 'Nationality and religion',
+                  icon: Icons.flag,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _nationalityController,
+                            label: 'Nationality',
+                            icon: Icons.flag,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _religionController,
+                            label: 'Religion',
+                            icon: Icons.church,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // Action Buttons
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _registerStudent,
+                              icon: const Icon(Icons.save),
+                              label: const Text('Register Student'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _clearForm,
+                              icon: const Icon(Icons.clear),
+                              label: const Text('Clear Form'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                textStyle: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '* Required fields',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.indigo,
-        ),
-      ),
-    );
-  }
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -471,6 +608,99 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
               color: selectedDate != null ? Colors.black : Colors.grey,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressStep(String title, bool isActive) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive ? Colors.indigo : Colors.grey[300],
+            ),
+            child: Icon(
+              Icons.check,
+              color: isActive ? Colors.white : Colors.grey,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              color: isActive ? Colors.indigo : Colors.grey,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressConnector(bool isActive) {
+    return Container(
+      width: 20,
+      height: 2,
+      color: isActive ? Colors.indigo : Colors.grey[300],
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 24),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.indigo, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.indigo,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ...children,
+          ],
         ),
       ),
     );

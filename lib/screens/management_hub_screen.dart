@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models.dart';
+import '../services/sync_service.dart';
 import 'teacher_assistant/class_selection_screen.dart';
 import 'timetable/manage_teachers_screen.dart';
 import 'teacher_assistant/manage_subjects_screen.dart';
 import 'student_registration_screen.dart';
 import 'class_assignment_screen.dart';
 import '../services/backup_service.dart';
-import 'package:file_picker/file_picker.dart';
+import 'conflict_resolution_screen.dart';
+import 'background_sync_settings_screen.dart';
+import 'user_management_screen.dart';
+import '../models/user_role.dart';
 
 class ManagementHubScreen extends StatefulWidget {
   const ManagementHubScreen({super.key});
@@ -21,11 +26,147 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
   int _totalTeachers = 0;
   int _totalStudents = 0;
   int _totalSubjects = 0;
+  bool _isOnline = true;
+  bool _isSyncing = false;
+  String _syncStatus = 'Ready';
+  DateTime? _lastSyncTime;
 
   @override
   void initState() {
     super.initState();
     _loadStatistics();
+    _initializeSyncStatus();
+    _monitorConnectivity();
+  }
+
+  Future<void> _initializeSyncStatus() async {
+    final lastSyncTime = SyncService.getLastSyncTime();
+    final isOnline = await SyncService.isOnline();
+
+    setState(() {
+      _lastSyncTime = lastSyncTime;
+      _isOnline = isOnline;
+      _syncStatus = _isOnline ? 'Ready' : 'Offline';
+    });
+  }
+
+  void _monitorConnectivity() {
+    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+      setState(() {
+        _isOnline = result != ConnectivityResult.none;
+        _syncStatus = _isOnline ? 'Ready' : 'Offline';
+      });
+    });
+  }
+
+  Future<void> _performSync() async {
+    if (!_isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No internet connection. Sync requires online access.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+      _syncStatus = 'Syncing...';
+    });
+
+    try {
+      final result = await SyncService.performFullSync();
+
+      setState(() {
+        _isSyncing = false;
+        _syncStatus = result.success ? 'Synced' : 'Sync Failed';
+        _lastSyncTime = DateTime.now();
+      });
+
+      // Check for conflicts
+      if (result.conflicts != null && result.conflicts!.isNotEmpty) {
+        // Show conflict resolution screen
+        if (mounted) {
+          await _showConflictResolutionScreen(result.conflicts!);
+        }
+      } else {
+        // Show regular sync result
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: result.success ? Colors.green : Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isSyncing = false;
+        _syncStatus = 'Sync Failed';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sync failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showConflictResolutionScreen(List<String> conflicts) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ConflictResolutionScreen(
+        conflicts: conflicts,
+        onResolve: (conflict, strategy) {
+          // Handle individual conflict resolution
+          _resolveConflict(conflict, strategy);
+        },
+      ),
+    );
+
+    // Refresh statistics after conflict resolution
+    await _loadStatistics();
+
+    // Show completion message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Conflicts resolved and sync completed'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _resolveConflict(String conflict, ConflictStrategy strategy) {
+    // This would typically send the resolution to the sync service
+    // For now, we'll just log it
+    print('Resolved conflict: $conflict with strategy: $strategy');
+  }
+
+  String _formatLastSyncTime(DateTime syncTime) {
+    final now = DateTime.now();
+    final difference = now.difference(syncTime);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${syncTime.day}/${syncTime.month}/${syncTime.year}';
+    }
   }
 
   Future<void> _loadStatistics() async {
@@ -123,11 +264,53 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
+          // Sync Status Indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: _isOnline
+                  ? (_isSyncing ? Colors.orange : Colors.green)
+                  : Colors.red,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _isSyncing
+                      ? Icons.sync
+                      : (_isOnline ? Icons.cloud_done : Icons.cloud_off),
+                  size: 16,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _syncStatus,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Sync Button
+          IconButton(
+            icon: Icon(
+              _isSyncing ? Icons.sync : Icons.sync_alt,
+              color: _isOnline ? Colors.white : Colors.grey,
+            ),
+            onPressed: _isOnline && !_isSyncing ? _performSync : null,
+            tooltip: _isOnline ? 'Sync with cloud' : 'Offline - sync unavailable',
+          ),
+          // Backup Button
           IconButton(
             icon: const Icon(Icons.backup),
             onPressed: () => _createBackup(context),
             tooltip: 'Backup Management Data',
           ),
+          // Restore Button
           IconButton(
             icon: const Icon(Icons.restore),
             onPressed: () => _restoreBackup(context),
@@ -142,6 +325,11 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
           children: [
             // Statistics Overview
             _buildStatisticsSection(),
+
+            const SizedBox(height: 24),
+
+            // Sync Status Section
+            _buildSyncStatusSection(),
 
             const SizedBox(height: 24),
 
@@ -225,6 +413,97 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
                 color: Colors.grey,
               ),
               textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSyncStatusSection() {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cloud Sync Status',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _isOnline
+                        ? (_isSyncing ? Colors.orange.shade100 : Colors.green.shade100)
+                        : Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _isSyncing
+                        ? Icons.sync
+                        : (_isOnline ? Icons.cloud_done : Icons.cloud_off),
+                    color: _isOnline
+                        ? (_isSyncing ? Colors.orange : Colors.green)
+                        : Colors.red,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _syncStatus,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_lastSyncTime != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Last sync: ${_formatLastSyncTime(_lastSyncTime!)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                      if (!_isOnline) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Offline mode - changes will sync when online',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_isOnline && !_isSyncing)
+                  ElevatedButton.icon(
+                    onPressed: _performSync,
+                    icon: const Icon(Icons.sync_alt, size: 16),
+                    label: const Text('Sync Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -366,6 +645,9 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
                 _buildQuickActionChip('Add Subject', Icons.library_add, Colors.purple, _addNewSubject),
                 _buildQuickActionChip('Generate Report', Icons.assessment, Colors.teal, _generateQuickReport),
                 _buildQuickActionChip('Backup Data', Icons.backup, Colors.red, _backupData),
+                _buildQuickActionChip('Sync Settings', Icons.settings_backup_restore, Colors.purple, _openSyncSettings),
+                if (AccessControlManager.canManageUsers())
+                  _buildQuickActionChip('User Management', Icons.people, Colors.indigo, _openUserManagement),
               ],
             ),
           ],
@@ -488,6 +770,20 @@ class _ManagementHubScreenState extends State<ManagementHubScreen> {
   void _backupData() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Data backup initiated')),
+    );
+  }
+
+  void _openSyncSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BackgroundSyncSettingsScreen()),
+    );
+  }
+
+  void _openUserManagement() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const UserManagementScreen()),
     );
   }
 }
@@ -692,7 +988,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                        const Icon(Icons.people_outline, size: 64, color: Colors.grey),
                         const SizedBox(height: 16),
                         Text(
                           box.values.isEmpty
@@ -825,8 +1121,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           );
         },
         backgroundColor: Colors.indigo,
-        child: const Icon(Icons.person_add),
         tooltip: 'Register New Student',
+        child: const Icon(Icons.person_add),
       ),
     );
   }
